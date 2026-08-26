@@ -23,5 +23,5 @@ async def commands(ws:WebSocket,session_id:str):
                 packet=json.loads(await ws.receive_text()); command=str(packet.get("command","IDLE")); p=point(packet)
                 d=packet.get("index_direction") or {}; direction=(float(d["x"]),float(d["y"])) if "x" in d and "y" in d else None
                 canvas.apply(command,p,direction); ok,jpeg=cv2.imencode(".jpg",canvas.render(),[cv2.IMWRITE_JPEG_QUALITY,88])
-                if ok: await output.send(pack({"kind":"canvas","session_id":session_id,"frame_id":packet.get("frame_id"),"seq":packet.get("seq"),"command":command,"mode":packet.get("mode","IDLE"),"zoom":round(canvas.zoom,3),"inference_ms":packet.get("inference_ms")},jpeg.tobytes()))
+                if ok: await output.send(pack({"kind":"canvas","session_id":session_id,"frame_id":packet.get("frame_id"),"seq":packet.get("seq"),"command":command,"mode":packet.get("mode","IDLE"),"zoom":round(canvas.zoom,3),"inference_ms":packet.get("inference_ms"),"landmarks":packet.get("landmarks")},jpeg.tobytes()))
     except WebSocketDisconnect: canvas.hide_cursor()

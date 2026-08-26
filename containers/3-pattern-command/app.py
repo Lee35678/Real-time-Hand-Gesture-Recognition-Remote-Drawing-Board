@@ -54,7 +54,7 @@ class SessionState:
     async def handle_packet(self, packet: dict) -> None:
         if not packet.get("hand_present"):
             self.classifier.reset()
-            await self._send_command("IDLE", None, None, packet, mode="IDLE")
+            await self._send_command("IDLE", None, None, None, packet, mode="IDLE")
             return
 
         world_landmarks = _to_landmarks(packet["world_landmarks"])
@@ -65,15 +65,16 @@ class SessionState:
         index_tip = {"x": tip["x"], "y": tip["y"]}
         direction = {"x": tip["x"] - pip["x"], "y": tip["y"] - pip["y"]}
 
-        await self._send_command(state.command, index_tip, direction, packet, mode=state.mode)
+        await self._send_command(state.command, index_tip, direction, image_landmarks, packet, mode=state.mode)
 
-    async def _send_command(self, command, index_tip, direction, packet, mode) -> None:
+    async def _send_command(self, command, index_tip, direction, landmarks, packet, mode) -> None:
         message = {
             "command": command,
             "mode": mode,
             "seq": packet.get("seq"),
             "index_tip": index_tip,
             "index_direction": direction,
+            "landmarks": landmarks,  # 21 normalized {x,y,z} points, for a skeleton overlay on the monitor
         }
         try:
             ws = await self._canvas()
