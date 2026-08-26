@@ -3,7 +3,58 @@
 현재 단계는 전체 원격 그림판이 아니라 Container B의 21개 랜드마크 출력과
 Container C의 규칙 기반 명령 판정을 검증하는 최소 프로토타입입니다.
 
-## 실행
+## 전체 서비스 실행 (Docker Compose)
+
+4개 컨테이너(web, canvas, vision-analysis, pattern-command)를 한 번에 띄워
+원격 그림판 전체를 로컬에서 실행할 수 있습니다.
+
+### 사전 준비
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) 설치 및 실행 중이어야 합니다.
+- 실제 휴대폰 카메라로 테스트하려면 [ngrok](https://ngrok.com) 계정과 authtoken이 필요합니다 (PC에서만
+  써볼 거라면 생략 가능).
+
+### 1. 저장소 받기
+
+```powershell
+git clone https://github.com/ddiw/Real-time-Hand-Gesture-Recognition-Remote-Drawing-Board.git
+cd Real-time-Hand-Gesture-Recognition-Remote-Drawing-Board
+```
+
+### 2. 빌드 및 실행
+
+```powershell
+docker compose up --build
+```
+
+4개 컨테이너가 모두 뜨면 준비 완료입니다. 확인용 엔드포인트:
+
+| 컨테이너 | 주소 |
+| --- | --- |
+| web | http://localhost:8000 |
+| canvas | http://localhost:8762/health |
+| vision-analysis | http://localhost:8763/health , http://localhost:8763/metrics |
+
+종료는 `Ctrl+C`, 또는 다른 터미널에서 `docker compose down`.
+
+### 3. 휴대폰으로 실제 사용하기 (원격 모드)
+
+카메라는 HTTPS에서만 접근을 허용하므로, 실제 휴대폰으로 테스트하려면 ngrok으로
+로컬 서버를 HTTPS 터널링해야 합니다.
+
+```powershell
+ngrok config add-authtoken <ngrok 대시보드에서 받은 토큰>   # 최초 1회만
+.\start_remote.ps1
+```
+
+콘솔에 뜨는 두 주소를 사용합니다.
+
+- `Monitor` 주소 → PC 브라우저에서 열기 (QR 코드가 표시됩니다)
+- `Phone` 주소 → 휴대폰 브라우저에서 열기, 또는 QR 스캔 후 카메라 권한 허용
+
+종료는 스크립트 창에서 `Enter`를 눌러야 ngrok과 컨테이너가 함께 정리됩니다.
+
+## 프로토타입 단독 실행
 
 ```powershell
 python -m pip install -r requirements.txt
