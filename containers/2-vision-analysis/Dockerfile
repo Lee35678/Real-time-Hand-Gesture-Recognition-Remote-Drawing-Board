@@ -22,7 +22,7 @@ COPY containers/2-vision-analysis/app ./app
 ENV HAND_LANDMARKER_MODEL_PATH=/app/models/hand_landmarker.task \
     PYTHONUNBUFFERED=1
 
-# 8760: Container A 프레임 수신(ingest), 8762: /health, /metrics
-EXPOSE 8760 8762
+# 8760: Container A 프레임 수신(ingest), 8763: /health, /metrics (8762는 canvas 서비스가 사용 중)
+EXPOSE 8760 8763
 
 CMD ["python", "-m", "app.main"]

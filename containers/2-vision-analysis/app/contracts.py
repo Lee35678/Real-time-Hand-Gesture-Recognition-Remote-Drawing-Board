@@ -12,7 +12,9 @@ from typing import Any, Optional, Sequence
 
 from .geometry import Point
 
-VALID_PIXEL_FORMATS = ("rgb8", "bgr8")
+VALID_COLOR_ORDERS = {"BGR": "bgr8", "RGB": "rgb8"}
+VALID_DTYPE = "uint8"
+VALID_CHANNELS = 3
 VALID_ROTATIONS = (0, 90, 180, 270)
 
 
@@ -24,7 +26,10 @@ class ContractError(ValueError):
 class IngestFrameHeader:
     """Container A가 프레임마다 먼저 보내는 JSON 헤더.
 
-    직후에 width*height*3 바이트의 binary 프레임(pixel 데이터)이 이어진다.
+    직후에 width*height*channels 바이트의 binary 프레임(pixel 데이터)이 이어진다.
+    필드명은 Container A(`containers/0-web/app.py`)가 실제로 보내는 형식을 따른다
+    (schema_version, channels, dtype, color_order, byte_length는 A가 함께 보내지만
+    검증 외 용도로는 사용하지 않는다).
     """
 
     session_id: str
@@ -44,21 +49,29 @@ class IngestFrameHeader:
             raise ContractError(f"invalid ingest header JSON: {exc}") from exc
 
         try:
+            dtype = str(data["dtype"])
+            channels = int(data["channels"])
+            color_order = str(data["color_order"])
+
             header = cls(
                 session_id=str(data["session_id"]),
                 seq=int(data["seq"]),
-                capture_ts=int(data["capture_ts"]),
+                capture_ts=int(data["captured_at_ms"]),
                 width=int(data["width"]),
                 height=int(data["height"]),
-                pixel_format=str(data["format"]),
+                pixel_format=VALID_COLOR_ORDERS.get(color_order, color_order),
                 rotation=int(data.get("rotation", 0)),
                 mirrored=bool(data.get("mirrored", False)),
             )
         except (KeyError, TypeError, ValueError) as exc:
             raise ContractError(f"malformed ingest header: {exc}") from exc
 
-        if header.pixel_format not in VALID_PIXEL_FORMATS:
-            raise ContractError(f"unsupported pixel format: {header.pixel_format}")
+        if dtype != VALID_DTYPE:
+            raise ContractError(f"unsupported dtype: {dtype}")
+        if channels != VALID_CHANNELS:
+            raise ContractError(f"unsupported channel count: {channels}")
+        if color_order not in VALID_COLOR_ORDERS:
+            raise ContractError(f"unsupported color_order: {color_order}")
         if header.rotation not in VALID_ROTATIONS:
             raise ContractError(f"unsupported rotation: {header.rotation}")
         if header.width <= 0 or header.height <= 0:
@@ -68,7 +81,7 @@ class IngestFrameHeader:
 
     @property
     def expected_payload_size(self) -> int:
-        return self.width * self.height * 3
+        return self.width * self.height * VALID_CHANNELS
 
 
 def _point_to_dict(p: Point) -> dict[str, float]:

@@ -98,7 +98,7 @@ class TransportConfig:
     )
 
     metrics_host: str = field(default_factory=lambda: _env_str("VISION_METRICS_HOST", "0.0.0.0"))
-    metrics_port: int = field(default_factory=lambda: _env_int("VISION_METRICS_PORT", 8762))
+    metrics_port: int = field(default_factory=lambda: _env_int("VISION_METRICS_PORT", 8763))
 
 
 @dataclass(frozen=True)

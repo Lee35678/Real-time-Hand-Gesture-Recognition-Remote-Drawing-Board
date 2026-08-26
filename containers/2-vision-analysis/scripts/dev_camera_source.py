@@ -2,7 +2,8 @@
 
 Container A 없이 Container B(vision-analysis)만 단독으로 켜서 테스트할 때,
 웹캠 또는 로컬 영상 파일을 ingest 프로토콜(JSON 헤더 + binary 프레임)에 맞춰
-스트리밍한다. PRD 6.2 계약을 실제로 준수하는 최소 참조 클라이언트이기도 하다.
+스트리밍한다. 헤더 필드는 실제 Container A(containers/0-web/app.py)가 보내는
+형식을 그대로 따른다.
 
 사용 예:
     python scripts/dev_camera_source.py --source 0          # 웹캠
@@ -15,6 +16,8 @@ import argparse
 import asyncio
 import json
 import time
+
+import uuid
 
 import cv2
 from websockets.asyncio.client import connect
@@ -39,18 +42,24 @@ async def stream(url: str, source: int | str, target_fps: float, rotation: int, 
                     break
 
                 height, width = frame.shape[:2]
+                payload = frame.tobytes()
                 header = {
+                    "schema_version": "1.0",
                     "session_id": url.rsplit("/", 1)[-1],
+                    "frame_id": str(uuid.uuid4()),
                     "seq": seq,
-                    "capture_ts": int(time.time() * 1000),
+                    "captured_at_ms": int(time.time() * 1000),
                     "width": width,
                     "height": height,
-                    "format": "bgr8",  # cv2 기본 색공간 — Container B가 RGB로 변환한다 (FR-B-01)
+                    "channels": 3,
+                    "dtype": "uint8",
+                    "color_order": "BGR",  # cv2 기본 색공간 — Container B가 RGB로 변환한다 (FR-B-01)
+                    "byte_length": len(payload),
                     "rotation": rotation,
                     "mirrored": mirrored,
                 }
                 await ws.send(json.dumps(header))
-                await ws.send(frame.tobytes())
+                await ws.send(payload)
 
                 if seq % 30 == 0:
                     print(f"sent seq={seq} ({width}x{height})")

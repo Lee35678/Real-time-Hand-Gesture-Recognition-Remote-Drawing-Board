@@ -79,30 +79,58 @@ def test_present_packet_round_trips_through_json():
 
 
 def test_ingest_header_parses_valid_json():
+    # Container A(containers/0-web/app.py)가 실제로 보내는 헤더 형식.
     raw = json.dumps(
         {
+            "schema_version": "1.0",
             "session_id": "abc123",
+            "frame_id": "f-1",
             "seq": 7,
-            "capture_ts": 1735891234567,
+            "captured_at_ms": 1735891234567,
             "width": 640,
             "height": 480,
-            "format": "rgb8",
+            "channels": 3,
+            "dtype": "uint8",
+            "color_order": "BGR",
+            "byte_length": 640 * 480 * 3,
             "rotation": 90,
             "mirrored": True,
         }
     )
     header = IngestFrameHeader.from_json(raw)
     assert header.session_id == "abc123"
+    assert header.capture_ts == 1735891234567
+    assert header.pixel_format == "bgr8"
     assert header.expected_payload_size == 640 * 480 * 3
     assert header.rotation == 90
     assert header.mirrored is True
 
 
+def _base_a_header(**overrides):
+    base = {
+        "schema_version": "1.0",
+        "session_id": "abc",
+        "frame_id": "f-1",
+        "seq": 1,
+        "captured_at_ms": 0,
+        "width": 10,
+        "height": 10,
+        "channels": 3,
+        "dtype": "uint8",
+        "color_order": "BGR",
+        "byte_length": 300,
+    }
+    base.update(overrides)
+    return base
+
+
+def test_ingest_header_maps_rgb_color_order():
+    header = IngestFrameHeader.from_json(json.dumps(_base_a_header(color_order="RGB")))
+    assert header.pixel_format == "rgb8"
+
+
 def test_ingest_header_defaults_rotation_and_mirrored():
-    raw = json.dumps(
-        {"session_id": "abc", "seq": 1, "capture_ts": 0, "width": 10, "height": 10, "format": "bgr8"}
-    )
-    header = IngestFrameHeader.from_json(raw)
+    header = IngestFrameHeader.from_json(json.dumps(_base_a_header()))
     assert header.rotation == 0
     assert header.mirrored is False
 
@@ -110,23 +138,16 @@ def test_ingest_header_defaults_rotation_and_mirrored():
 @pytest.mark.parametrize(
     "overrides",
     [
-        {"format": "yuv420"},
+        {"color_order": "YUV"},
+        {"dtype": "float32"},
+        {"channels": 4},
         {"rotation": 45},
         {"width": 0},
     ],
 )
 def test_ingest_header_rejects_invalid_values(overrides):
-    base = {
-        "session_id": "abc",
-        "seq": 1,
-        "capture_ts": 0,
-        "width": 10,
-        "height": 10,
-        "format": "rgb8",
-    }
-    base.update(overrides)
     with pytest.raises(ContractError):
-        IngestFrameHeader.from_json(json.dumps(base))
+        IngestFrameHeader.from_json(json.dumps(_base_a_header(**overrides)))
 
 
 def test_ingest_header_rejects_missing_field():
