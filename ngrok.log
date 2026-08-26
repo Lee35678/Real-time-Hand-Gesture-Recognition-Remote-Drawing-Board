@@ -1,0 +1,28 @@
+t=2026-08-26T14:49:49+0900 lvl=info msg="no configuration paths supplied"
+t=2026-08-26T14:49:50+0900 lvl=info msg="using configuration at default config path" path=C:\\Users\\동혁\\AppData\\Local\\ngrok\\ngrok.yml
+t=2026-08-26T14:49:50+0900 lvl=info msg="open config file" path=C:\\Users\\동혁\\AppData\\Local\\ngrok\\ngrok.yml err=nil
+t=2026-08-26T14:49:50+0900 lvl=info msg="FIPS 140 mode" enabled=false
+t=2026-08-26T14:49:50+0900 lvl=info msg="starting web service" obj=web addr=127.0.0.1:4040 allow_hosts=[]
+t=2026-08-26T14:49:50+0900 lvl=info msg=start pg=/api/tunnels id=207fac5fd67726a5
+t=2026-08-26T14:49:50+0900 lvl=info msg=end pg=/api/tunnels id=207fac5fd67726a5 status=200 dur=2.0357ms
+t=2026-08-26T14:49:50+0900 lvl=info msg="client session established" obj=tunnels.session
+t=2026-08-26T14:49:50+0900 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2026-08-26T14:49:50+0900 lvl=info msg="started tunnel" obj=tunnels name=command_line addr=http://localhost:8000 url=https://engraving-puppy-cyclic.ngrok-free.dev
+t=2026-08-26T14:49:51+0900 lvl=info msg=start pg=/api/tunnels id=cbcfd8f47517340b
+t=2026-08-26T14:49:51+0900 lvl=info msg=end pg=/api/tunnels id=cbcfd8f47517340b status=200 dur=0s
+t=2026-08-26T14:50:26+0900 lvl=info msg="join connections" obj=join id=ed09acb8d386 l=[::1]:8000 r=211.231.103.106:41036
+t=2026-08-26T14:50:29+0900 lvl=info msg="join connections" obj=join id=44ebd0039294 l=[::1]:8000 r=175.192.89.149:55732
+t=2026-08-26T14:50:33+0900 lvl=info msg="join connections" obj=join id=f4b61732913f l=[::1]:8000 r=175.192.89.149:37904
+t=2026-08-26T14:51:35+0900 lvl=info msg="join connections" obj=join id=5517b27cb2eb l=[::1]:8000 r=175.192.89.149:50903
+t=2026-08-26T14:51:35+0900 lvl=info msg="join connections" obj=join id=eaa232276172 l=[::1]:8000 r=175.192.89.149:50903
+t=2026-08-26T14:51:36+0900 lvl=info msg="join connections" obj=join id=cc7d0275b021 l=[::1]:8000 r=175.192.89.149:54812
+t=2026-08-26T14:51:45+0900 lvl=info msg="join connections" obj=join id=0dedf1e2721b l=[::1]:8000 r=175.192.89.149:50903
+t=2026-08-26T14:51:45+0900 lvl=info msg="join connections" obj=join id=a35a51780ed1 l=[::1]:8000 r=175.192.89.149:53069
+t=2026-08-26T14:52:16+0900 lvl=info msg="join connections" obj=join id=a6e6ed864c5b l=[::1]:8000 r=175.192.89.149:50903
+t=2026-08-26T14:52:16+0900 lvl=info msg="join connections" obj=join id=2886ba5bd10e l=[::1]:8000 r=175.192.89.149:50155
+t=2026-08-26T14:52:42+0900 lvl=info msg="join connections" obj=join id=ce1ea4fb4c2c l=[::1]:8000 r=175.192.89.149:50903
+t=2026-08-26T14:52:42+0900 lvl=info msg="join connections" obj=join id=34a07bb9afd6 l=[::1]:8000 r=175.192.89.149:60979
+t=2026-08-26T14:52:48+0900 lvl=info msg="join connections" obj=join id=f28433efc05b l=[::1]:8000 r=175.192.89.149:50903
+t=2026-08-26T14:52:56+0900 lvl=info msg="join connections" obj=join id=396bee50eaf6 l=[::1]:8000 r=175.192.89.149:55614
+t=2026-08-26T14:53:23+0900 lvl=info msg="join connections" obj=join id=5a070e6ffdc0 l=[::1]:8000 r=175.192.89.149:36144
+t=2026-08-26T14:53:25+0900 lvl=info msg="join connections" obj=join id=4124750bc2b3 l=[::1]:8000 r=175.192.89.149:33722
