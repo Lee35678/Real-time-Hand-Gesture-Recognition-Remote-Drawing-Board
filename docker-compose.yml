@@ -1,0 +1,20 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: containers/0-web/Dockerfile
+
+  canvas:
+    build:
+      context: .
+      dockerfile: containers/1-canvas/Dockerfile
+
+  vision-analysis:
+    build:
+      context: .
+      dockerfile: containers/2-vision-analysis/Dockerfile
+
+  pattern-command:
+    build:
+      context: .
+      dockerfile: containers/3-pattern-command/Dockerfile
