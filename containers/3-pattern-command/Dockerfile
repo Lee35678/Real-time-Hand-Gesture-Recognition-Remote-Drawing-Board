@@ -4,3 +4,4 @@ WORKDIR /app
 COPY containers/3-pattern-command/requirements.txt ./requirements.txt
 COPY containers/3-pattern-command ./
 RUN pip install --no-cache-dir -r requirements.txt
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8761"]
