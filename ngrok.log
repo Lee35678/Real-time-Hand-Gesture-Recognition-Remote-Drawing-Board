@@ -26,3 +26,35 @@ t=2026-08-26T14:52:48+0900 lvl=info msg="join connections" obj=join id=f28433efc
 t=2026-08-26T14:52:56+0900 lvl=info msg="join connections" obj=join id=396bee50eaf6 l=[::1]:8000 r=175.192.89.149:55614
 t=2026-08-26T14:53:23+0900 lvl=info msg="join connections" obj=join id=5a070e6ffdc0 l=[::1]:8000 r=175.192.89.149:36144
 t=2026-08-26T14:53:25+0900 lvl=info msg="join connections" obj=join id=4124750bc2b3 l=[::1]:8000 r=175.192.89.149:33722
+t=2026-08-26T15:09:42+0900 lvl=info msg="no configuration paths supplied"
+t=2026-08-26T15:09:42+0900 lvl=info msg="using configuration at default config path" path=C:\\Users\\동혁\\AppData\\Local\\ngrok\\ngrok.yml
+t=2026-08-26T15:09:42+0900 lvl=info msg="open config file" path=C:\\Users\\동혁\\AppData\\Local\\ngrok\\ngrok.yml err=nil
+t=2026-08-26T15:09:42+0900 lvl=info msg="FIPS 140 mode" enabled=false
+t=2026-08-26T15:09:42+0900 lvl=info msg="starting web service" obj=web addr=127.0.0.1:4040 allow_hosts=[]
+t=2026-08-26T15:09:42+0900 lvl=info msg="client session established" obj=tunnels.session
+t=2026-08-26T15:09:42+0900 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2026-08-26T15:09:42+0900 lvl=info msg=start pg=/api/tunnels id=ef85a015402f1059
+t=2026-08-26T15:09:42+0900 lvl=info msg=end pg=/api/tunnels id=ef85a015402f1059 status=200 dur=577.4µs
+t=2026-08-26T15:09:43+0900 lvl=info msg="started tunnel" obj=tunnels name=command_line addr=http://localhost:8000 url=https://engraving-puppy-cyclic.ngrok-free.dev
+t=2026-08-26T15:09:43+0900 lvl=info msg=start pg=/api/tunnels id=9f66e17ee4a3131c
+t=2026-08-26T15:09:43+0900 lvl=info msg=end pg=/api/tunnels id=9f66e17ee4a3131c status=200 dur=0s
+t=2026-08-26T15:13:08+0900 lvl=info msg="no configuration paths supplied"
+t=2026-08-26T15:13:08+0900 lvl=info msg="using configuration at default config path" path=C:\\Users\\동혁\\AppData\\Local\\ngrok\\ngrok.yml
+t=2026-08-26T15:13:08+0900 lvl=info msg="open config file" path=C:\\Users\\동혁\\AppData\\Local\\ngrok\\ngrok.yml err=nil
+t=2026-08-26T15:13:08+0900 lvl=info msg="FIPS 140 mode" enabled=false
+t=2026-08-26T15:13:08+0900 lvl=warn msg="can't bind default web address, trying alternatives" obj=web addr=127.0.0.1:4040
+t=2026-08-26T15:13:08+0900 lvl=info msg="starting web service" obj=web addr=127.0.0.1:4041 allow_hosts=[]
+t=2026-08-26T15:13:08+0900 lvl=info msg="client session established" obj=tunnels.session
+t=2026-08-26T15:13:08+0900 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2026-08-26T15:13:08+0900 lvl=eror msg="session closing" obj=tunnels.session err="failed to start tunnel: The endpoint 'https://engraving-puppy-cyclic.ngrok-free.dev' is already online. Either\n1. stop your existing endpoint first, or\n2. start both endpoints with `--pooling-enabled` to load balance between them.\r\n\r\nERR_NGROK_334\r\n"
+t=2026-08-26T15:13:08+0900 lvl=info msg="accept failed" obj=tunnels.session obj=csess id=7ee74bb09087 err="reconnecting session closed"
+t=2026-08-26T15:13:08+0900 lvl=info msg="no more state changes" obj=tunnels.session
+t=2026-08-26T15:13:08+0900 lvl=info msg="received stop request" obj=app stopReq="{err:{Inner:{Inner:0x1eb223066750}} restart:false}"
+t=2026-08-26T15:13:08+0900 lvl=eror msg="terminating with error" obj=app err="failed to start tunnel: The endpoint 'https://engraving-puppy-cyclic.ngrok-free.dev' is already online. Either\n1. stop your existing endpoint first, or\n2. start both endpoints with `--pooling-enabled` to load balance between them.\r\n\r\nERR_NGROK_334\r\n"
+t=2026-08-26T15:13:08+0900 lvl=info msg=start pg=/api/tunnels id=c7d3e585d3cd6b90
+t=2026-08-26T15:13:08+0900 lvl=info msg=end pg=/api/tunnels id=c7d3e585d3cd6b90 status=200 dur=0s
+t=2026-08-26T15:13:08+0900 lvl=crit msg="command failed" err="failed to start tunnel: The endpoint 'https://engraving-puppy-cyclic.ngrok-free.dev' is already online. Either\n1. stop your existing endpoint first, or\n2. start both endpoints with `--pooling-enabled` to load balance between them.\r\n\r\nERR_NGROK_334\r\n"
+t=2026-08-26T15:13:17+0900 lvl=info msg="join connections" obj=join id=07b84f386442 l=[::1]:8000 r=175.192.89.149:53804
+t=2026-08-26T15:13:17+0900 lvl=info msg="join connections" obj=join id=eabf3f50d758 l=[::1]:8000 r=175.192.89.149:63990
+t=2026-08-26T15:13:36+0900 lvl=info msg="join connections" obj=join id=dfe91ec815b3 l=[::1]:8000 r=175.192.89.149:44544
+t=2026-08-26T15:13:39+0900 lvl=info msg="join connections" obj=join id=97ef0bf44119 l=[::1]:8000 r=175.192.89.149:44552
