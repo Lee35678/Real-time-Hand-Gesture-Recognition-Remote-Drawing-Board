@@ -1,0 +1,3 @@
+# 운영 환경 오버라이드. canvas.yaml 위에 덮어써진다.
+app:
+  env: prod

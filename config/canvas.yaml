@@ -1,0 +1,22 @@
+# containers/1-canvas 기본 설정.
+#
+# 우선순위: 환경변수 > config/canvas.{APP_ENV}.yaml > 이 파일 > 코드 기본값.
+# 값은 리팩토링 이전 drawing_canvas.py/app.py의 하드코딩 기본값과 동일하게
+# 맞춰져 있다 (동작 변경 없음 — refactoring.md 8절 금지사항 2).
+
+app:
+  env: dev
+
+canvas:
+  width: 360
+  height: 640
+  zoom_step: 1.05
+  min_zoom: 1.0
+  max_zoom: 4.0
+  pen_thickness: 4
+  eraser_radius: 24
+  min_draw_distance: 2.0
+  jpeg_quality: 88
+
+transport:
+  web_canvas_output_url: ws://web:8000/ws/canvas-output/{session_id}
