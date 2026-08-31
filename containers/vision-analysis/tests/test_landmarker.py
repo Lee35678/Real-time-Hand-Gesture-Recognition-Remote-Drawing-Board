@@ -2,6 +2,10 @@ import queue
 from dataclasses import dataclass
 from typing import Any
 
+import pytest
+
+from app.config import ModelConfig
+from app.errors import ModelLoadError
 from app.vision.landmarker import HandLandmarkerSession, MonotonicTimestampGuard
 
 
@@ -78,3 +82,21 @@ def test_on_result_builds_packet_when_both_landmark_sets_present():
     assert result.hand_present is True
     assert len(result.landmarks) == 21
     assert len(result.world_landmarks) == 21
+
+
+def test_corrupt_model_file_raises_model_load_error(tmp_path):
+    """PRD edge case #9: a present-but-corrupt model file must fail fast with
+    a domain exception, not propagate whatever MediaPipe happens to raise."""
+    corrupt_model = tmp_path / "corrupt.task"
+    corrupt_model.write_bytes(b"not a real mediapipe model bundle")
+    model_cfg = ModelConfig(
+        asset_path=str(corrupt_model),
+        num_hands=1,
+        min_hand_detection_confidence=0.5,
+        min_hand_presence_confidence=0.5,
+        min_tracking_confidence=0.5,
+        delegate="CPU",
+    )
+
+    with pytest.raises(ModelLoadError):
+        HandLandmarkerSession(model_cfg, queue.Queue())

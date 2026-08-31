@@ -18,6 +18,7 @@ from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision as mp_vision
 
 from ..config import ModelConfig
+from ..errors import ModelLoadError
 from .geometry import Point
 
 logger = logging.getLogger(__name__)
@@ -88,7 +89,16 @@ class HandLandmarkerSession:
             min_tracking_confidence=model.min_tracking_confidence,
             result_callback=self._on_result,
         )
-        self._landmarker = mp_vision.HandLandmarker.create_from_options(options)
+        try:
+            self._landmarker = mp_vision.HandLandmarker.create_from_options(options)
+        except Exception as exc:
+            # PRD edge case #9: schema.py's Fail-Fast only checks that the model
+            # file *exists* (cheap, no MediaPipe dependency there); a corrupt-but-
+            # present file only surfaces here. Convert whatever MediaPipe raises
+            # into our own fatal type so callers have one thing to catch.
+            raise ModelLoadError(
+                f"failed to load MediaPipe Hand Landmarker model from {model.asset_path!r}: {exc}"
+            ) from exc
 
     def submit(self, mp_image: "mp.Image", capture_ts_ms: int) -> int:
         """프레임을 비동기 추론에 투입한다. 실제 사용된 타임스탬프를 반환한다 (FR-B-06)."""

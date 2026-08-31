@@ -9,14 +9,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import queue
 import signal
 import sys
 
-from .config import ConfigValidationError, Settings, load_settings, validate
+from .config import ConfigValidationError, ModelConfig, Settings, load_settings, validate
 from .contracts import LandmarkPacket
+from .errors import ModelLoadError
 from .observability.metrics import MetricsCollector, run_metrics_http_server
 from .transport.egress_client import run_egress_client
 from .transport.ingest_server import run_ingest_server
+from .vision.landmarker import HandLandmarkerSession, LandmarkResult
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +55,17 @@ async def run(settings: Settings) -> None:
         raise SystemExit(0)
 
 
+def _verify_model_loads(model: ModelConfig) -> None:
+    """모델 파일이 존재해도 손상되어 있으면 로드에 실패할 수 있다 (PRD edge
+    case #9). schema.py의 Fail-Fast는 파일 존재 여부만 확인하므로(mediapipe
+    의존성을 피하려는 의도적 설계), 여기서 실제로 한 번 만들어보고 즉시
+    닫아 검증한다. 세션당 재사용은 8.3 함정이므로 이 인스턴스는 검증
+    용도로만 쓰고 버린다."""
+    probe_queue: "queue.Queue[LandmarkResult]" = queue.Queue()
+    session = HandLandmarkerSession(model, probe_queue)
+    session.close()
+
+
 def main() -> None:
     settings = load_settings()
     logging.basicConfig(
@@ -62,6 +76,11 @@ def main() -> None:
         validate(settings)
     except ConfigValidationError as exc:
         logger.critical("configuration rejected, refusing to start: %s", exc)
+        sys.exit(1)
+    try:
+        _verify_model_loads(settings.model)
+    except ModelLoadError as exc:
+        logger.critical("model failed to load, refusing to start: %s", exc)
         sys.exit(1)
     try:
         asyncio.run(run(settings))
