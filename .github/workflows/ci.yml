@@ -1,0 +1,154 @@
+name: CI
+
+# refactoring.md Pillar 4-2. 이 저장소는 4개 컨테이너가 각자 독립된
+# requirements*.txt/pytest 스위트를 갖는 구조라, 단일 "pip install -e .[dev]"
+# 대신 컨테이너별 매트릭스로 설치/검사한다. 배포/릴리즈 스텝은 의도적으로 없다
+# (CI 도입 범위는 품질 게이트까지 — CD는 별도 논의 대상).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  PYTHON_VERSION: "3.12"
+  PYTEST_VERSION: "9.1.1" # containers/vision-analysis/requirements-dev.txt와 동일 버전으로 고정
+
+jobs:
+  quality:
+    name: Lint & type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install lint/type tools
+        run: pip install ruff mypy
+      - name: Install container dependencies (for mypy import resolution)
+        run: |
+          pip install -r requirements.txt
+          pip install -r containers/vision-analysis/requirements.txt
+          pip install -r containers/pattern-command/requirements.txt
+      - name: ruff check
+        run: ruff check containers
+      # 컨테이너마다 app/config/tests 등 동일한 이름의 모듈이 있어 하나로 합쳐
+      # 검사할 수 없다 (containers/*/pytest.ini를 컨테이너별로 나눠둔 것과 같은 이유).
+      - name: mypy (per container)
+        run: |
+          set -e
+          for c in vision-analysis pattern-command canvas web; do
+            echo "== mypy: $c =="
+            (cd "containers/$c" && mypy .)
+          done
+
+  test:
+    name: Test (${{ matrix.container }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        container: [web, canvas, vision-analysis, pattern-command]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install dependencies
+        run: |
+          set -e
+          case "${{ matrix.container }}" in
+            web|canvas)
+              pip install -r requirements.txt
+              pip install "pytest==${PYTEST_VERSION}"
+              ;;
+            vision-analysis)
+              pip install -r containers/vision-analysis/requirements-dev.txt
+              ;;
+            pattern-command)
+              pip install -r containers/pattern-command/requirements.txt
+              pip install "pytest==${PYTEST_VERSION}"
+              ;;
+          esac
+      - name: pytest
+        run: cd containers/${{ matrix.container }} && pytest -q
+
+  characterization:
+    name: Characterization fixture (regression guard)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install numpy
+      - name: Regenerate and diff tests/fixtures/characterization.json
+        run: |
+          python tests/fixtures/generate_characterization.py
+          git diff --exit-code tests/fixtures/characterization.json
+
+  config-validation:
+    name: Config validation (${{ matrix.container }}, ${{ matrix.app_env }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        container: [vision-analysis, pattern-command, canvas]
+        app_env: [dev, prod]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install dependencies
+        run: |
+          set -e
+          case "${{ matrix.container }}" in
+            canvas)
+              pip install -r requirements.txt
+              ;;
+            vision-analysis)
+              pip install -r containers/vision-analysis/requirements.txt
+              ;;
+            pattern-command)
+              pip install -r containers/pattern-command/requirements.txt
+              ;;
+          esac
+      - name: Load + validate settings (Fail Fast, Pillar 1-2)
+        working-directory: containers/${{ matrix.container }}
+        env:
+          APP_ENV: ${{ matrix.app_env }}
+        run: |
+          set -e
+          case "${{ matrix.container }}" in
+            vision-analysis)
+              python -c "from app.config import load_settings, validate; s = load_settings(); validate(s, check_model_file=False); print('OK')"
+              ;;
+            pattern-command)
+              python -c "from config import load_settings, validate; s = load_settings(); validate(s); print('OK')"
+              ;;
+            canvas)
+              python -c "from canvas_config import load_settings, validate; s = load_settings(); validate(s); print('OK')"
+              ;;
+          esac
+
+  docker-build:
+    name: Docker build (${{ matrix.container }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        container: [web, canvas, vision-analysis, pattern-command]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image (build-only, no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: containers/${{ matrix.container }}/Dockerfile
+          push: false

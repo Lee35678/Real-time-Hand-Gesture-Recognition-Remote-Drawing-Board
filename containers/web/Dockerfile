@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 COPY requirements.txt ./requirements.txt
-COPY containers/web/app.py ./app.py
+COPY containers/web/app.py containers/web/logging_setup.py ./
 COPY containers/web/web ./web
 # requirements.txt pulls the GUI build of opencv-python for local (non-Docker) dev;
 # swap it for the headless build here since this container has no display and the
