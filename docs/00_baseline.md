@@ -15,7 +15,7 @@ refactoring.md는 범용 PRD 템플릿을 기반으로 "카메라 → MediaPipe 
 
 | refactoring.md의 가정 | 실제 코드 |
 |---|---|
-| 단일 컨테이너("Container B")가 카메라~좌표발행 전부 처리 | **4개 컨테이너**(0-web, 1-canvas, 2-vision-analysis, 3-pattern-command)로 분리 완료 |
+| 단일 컨테이너("Container B")가 카메라~좌표발행 전부 처리 | **4개 컨테이너**(web, canvas, vision-analysis, pattern-command)로 분리 완료 |
 | `pinch_enter_threshold_m` / `pinch_exit_threshold_m` 히스테리시스로 DRAW 판정 | DRAW/ERASE는 **PIP 관절 각도**(`open_pip_angle_deg=120°`) + **5프레임 다수결 디바운스**(`window_size=5`, `required_open_votes=4`)로 판정. 두 임계값 히스테리시스는 **줌 락 진입**(`zoom_start_closed_ratio=0.80` / `zoom_start_open_ratio=1.00`)에만 존재 |
 | 정규화 좌표를 `[0,1]`로 클램프 (edge-case #2) | `contracts.py`/`geometry.py`가 **명시적으로 클램프하지 않는다** (계약 규칙 6.2-2, `unletterbox_point` 독스트링 참조) |
 | `hand_lost_timeout_ms` 기반 타임아웃 후 스트로크 종료 | 손 소실은 **프레임 단위 즉시 반영**(`hand_present=False`) — 별도 타임아웃 타이머 없음. Container 3의 `SessionState`가 즉시 `classifier.reset()` 호출 |
@@ -30,7 +30,7 @@ refactoring.md는 범용 PRD 템플릿을 기반으로 "카메라 → MediaPipe 
       │ JPEG (WebSocket, /ws/camera?t=TOKEN)
       ▼
 ┌─────────────────────────┐
-│ Container A: 0-web      │  containers/0-web/app.py (FastAPI, port 8000)
+│ Container A: web      │  containers/web/app.py (FastAPI, port 8000)
 │  - JPEG 디코드(cv2)      │  QR/모니터 페이지, 세션 토큰 검증
 │  - BGR raw 프레임 재인코딩│
 └─────────────────────────┘
@@ -38,7 +38,7 @@ refactoring.md는 범용 PRD 템플릿을 기반으로 "카메라 → MediaPipe 
       │ ws://vision-analysis:8760/ingest/{session_id}
       ▼
 ┌───────────────────────────────────────┐
-│ Container B: 2-vision-analysis        │  app/main.py (port 8760 ingest, 8763 /health·/metrics)
+│ Container B: vision-analysis        │  app/main.py (port 8760 ingest, 8763 /health·/metrics)
 │  ingest_server → SessionPipeline      │
 │   ① to_rgb ② rotate/mirror ③ CLAHE(옵션) │  preprocess.py
 │   ④ letterbox resize                  │
@@ -51,7 +51,7 @@ refactoring.md는 범용 PRD 템플릿을 기반으로 "카메라 → MediaPipe 
       │ ws://pattern-command:8761/landmarks
       ▼
 ┌───────────────────────────────────────┐
-│ Container C: 3-pattern-command        │  app.py (FastAPI, port 8761)
+│ Container C: pattern-command        │  app.py (FastAPI, port 8761)
 │  SessionState.handle_packet           │
 │   - hand_present=False → classifier.reset() → IDLE 발행 │
 │   - hand_present=True  → GestureClassifier.update(world_landmarks) │ gesture_classifier.py, index_finger.py
@@ -61,7 +61,7 @@ refactoring.md는 범용 PRD 템플릿을 기반으로 "카메라 → MediaPipe 
       │ ws://canvas:8762/commands/{session_id}
       ▼
 ┌───────────────────────────────────────┐
-│ Container D: 1-canvas                 │  app.py (FastAPI, port 8762) + drawing_canvas.py
+│ Container D: canvas                 │  app.py (FastAPI, port 8762) + drawing_canvas.py
 │  DrawingCanvas.apply() → render()     │  펜/지우개/줌 렌더링 (cv2)
 └───────────────────────────────────────┘
       │ BINARY(JPEG 캔버스 프레임, pack()) 
@@ -71,21 +71,21 @@ Container A가 /ws/monitor 구독자에게 재전송 (모니터 화면에 표시
 ```
 
 로컬 단독 실행 보조 도구(카메라/영상 파일 필요, 자동 테스트에는 쓰지 않음):
-- `containers/2-vision-analysis/scripts/dev_camera_source.py` — Container A 스탠드인 (웹캠/영상 파일 → ingest 프로토콜)
-- `containers/2-vision-analysis/scripts/dev_pattern_sink.py` — Container C 스탠드인 (수신 패킷 로깅)
-- `containers/1-canvas/drawing_canvas.py:main()` — 로컬 웹캠으로 캔버스 단독 구동(디버그 CLI, `--camera` 인자로 cv2.VideoCapture 오픈)
-- `app.py`(레포 루트) — `containers/1-canvas/drawing_canvas.py`를 로드하는 하위호환 진입점
+- `containers/vision-analysis/scripts/dev_camera_source.py` — Container A 스탠드인 (웹캠/영상 파일 → ingest 프로토콜)
+- `containers/vision-analysis/scripts/dev_pattern_sink.py` — Container C 스탠드인 (수신 패킷 로깅)
+- `containers/canvas/drawing_canvas.py:main()` — 로컬 웹캠으로 캔버스 단독 구동(디버그 CLI, `--camera` 인자로 cv2.VideoCapture 오픈)
+- `app.py`(레포 루트) — `containers/canvas/drawing_canvas.py`를 로드하는, README에 문서화된 로컬 웹캠 단독 실행 진입점(레거시 아님, §2 참고)
 
 ## 2. 파일 인벤토리 / LoC / 책임
 
-### Container A — `containers/0-web/` (게이트웨이, Python, FastAPI)
+### Container A — `containers/web/` (게이트웨이, Python, FastAPI)
 
 | 파일 | LoC | 책임 |
 |---|---|---|
 | `app.py` | 74 | 카메라 WS(JPEG 수신→BGR 디코드→B로 전달), 모니터 WS 팬아웃, QR/정적 페이지, 세션 토큰 검증 |
 | `Dockerfile` | - | port 8000 |
 
-### Container D — `containers/1-canvas/` (캔버스 렌더러, Python, FastAPI)
+### Container D — `containers/canvas/` (캔버스 렌더러, Python, FastAPI)
 
 | 파일 | LoC | 책임 |
 |---|---|---|
@@ -93,7 +93,7 @@ Container A가 /ws/monitor 구독자에게 재전송 (모니터 화면에 표시
 | `drawing_canvas.py` | 523 | `DrawingCanvas`(펜/지우개/줌 렌더링, 순수 상태+cv2 렌더링), `PerformanceMonitor`, 좌표 변환 순수 함수(`drawing_area_for_frame`, `camera_to_canvas_point`), **로컬 웹캠 디버그 CLI**(`main()`, MediaPipe 직접 로드) |
 | `Dockerfile` | - | port 8762, opencv-python→headless로 교체 설치 |
 
-### Container B — `containers/2-vision-analysis/` (비전 분석 엔진, Python, asyncio)
+### Container B — `containers/vision-analysis/` (비전 분석 엔진, Python, asyncio)
 
 | 파일 | LoC | 책임 |
 |---|---|---|
@@ -125,7 +125,7 @@ Container A가 /ws/monitor 구독자에게 재전송 (모니터 화면에 표시
 기존 `app/config.py`(단일 파일, 하드코딩 기본값)는 **삭제되고** `app/config/`
 패키지(스키마 검증 포함)로 대체되는 중이다(현재 working tree, 미커밋).
 
-### Container C — `containers/3-pattern-command/` (제스처 판정, Python, FastAPI)
+### Container C — `containers/pattern-command/` (제스처 판정, Python, FastAPI)
 
 | 파일 | LoC | 책임 |
 |---|---|---|
@@ -136,36 +136,49 @@ Container A가 /ws/monitor 구독자에게 재전송 (모니터 화면에 표시
 | `requirements.txt` | - | fastapi, uvicorn, websockets |
 | `Dockerfile` | - | port 8761 |
 
-### 레거시/호환 코드
+### 레포 루트의 `app.py` — 레거시가 아니라 문서화된 기능
 
-| 경로 | 상태 |
-|---|---|
-| `containers/pattern_command/{gesture_classifier,index_finger}.py` | 8줄짜리 호환 shim — `sys.path` 조작 후 `containers/3-pattern-command`의 동일 모듈을 `import *` — 로직 중복 아님 |
-| `tests/test_gesture_classifier.py`, `tests/test_index_finger.py`, `tests/test_drawing_canvas.py` (레포 루트) | 위 shim/`app.py`를 통해 실제 로직을 이미 단위 테스트 중 (279 LoC) — Phase 1 디렉토리 재편 시 이관 대상 |
-| `app.py`(레포 루트) | `containers/1-canvas/drawing_canvas.py`를 동적 로드하는 하위호환 진입점 |
+Phase 1 초반에는 이 파일을 "레거시 하위호환 진입점"으로 오분류했으나,
+`README.md`("프로토타입 단독 실행" 절)가 `python app.py [--camera N]
+[--output 폴더]`를 **실제로 지원하는 독립 실행 경로**로 명시하고 있다 —
+Docker 없이 로컬 웹캠만으로 캔버스를 띄우는 유일한 방법이다. `containers/canvas/drawing_canvas.py`를 동적으로 로드해 `DrawingCanvas`/`PerformanceMonitor`/좌표 변환 함수/`main()`을 재노출하는 4개 함수만 있는
+얇은 진입점이며, Phase 1 디렉토리 재편(컨테이너 번호 접두사 제거) 이후에도
+그대로 유지했다(경로만 `containers/canvas/...`로 갱신).
+
+### Phase 1에서 제거한 죽은 코드
+
+리팩토링 전에는 아래 shim이 `containers/pattern_command/{gesture_classifier,index_finger}.py`
+(8줄, `sys.path` 조작 후 `containers/3-pattern-command`의 동일 모듈을 `import *`)로
+존재했고, 레포 루트 `tests/test_gesture_classifier.py`·`test_index_finger.py`·
+`test_drawing_canvas.py`(279 LoC)가 이 shim과 루트 `app.py`를 통해 실제 로직을
+간접적으로 테스트하고 있었다. 디렉터리 재편 과정에서 이 shim이 이미 깨져
+있었음을 발견했다(§"Phase 1에서 새로 발견/해결한 이슈" 참고) — 세 테스트
+파일을 각자가 실제로 검증하는 컨테이너의 `tests/`로 옮기고 import를 직접
+참조로 바꾼 뒤, shim과 `containers/__init__.py`를 삭제했다. 현재 각 컨테이너의
+테스트는 해당 컨테이너의 코드를 간접 경로 없이 직접 import한다.
 
 ### 합계
 
 | 구분 | LoC |
 |---|---|
-| Container A (0-web) | 74 |
-| Container D (1-canvas) | 550 |
-| Container B (2-vision-analysis) app/ | 1,213 |
+| Container A (web) | 74 |
+| Container D (canvas) app + tests | 550 + 87 |
+| Container B (vision-analysis) app/ | 1,213 |
 | Container B tests/ + scripts/ | 464 |
-| Container C (3-pattern-command) | 452 |
-| 레거시 shim (containers/pattern_command) | 16 |
-| 레포 루트 tests/ (레거시 대상 유닛 테스트) | 279 |
-| **총계 (대략)** | **~3,050** |
+| Container C (pattern-command) app + tests | 452 + 132 |
+| 레포 루트 `app.py`(문서화된 독립 실행 진입점) | 24 |
+| 레포 루트 `tests/fixtures/`(특성화 스냅샷 생성기) | ~600 |
+| **총계 (대략)** | **~3,600** |
 
 ## 3. 외부 의존성 (실제 import 기준)
 
 | 컨테이너 | 런타임 의존성 | 비고 |
 |---|---|---|
-| 0-web | `fastapi`, `uvicorn[standard]`, `websockets`, `opencv-python`(GUI 빌드!), `numpy`, `qrcode[pil]` | 레포 루트 `requirements.txt` 사용 — headless 아님 |
-| 1-canvas | 0-web과 동일 `requirements.txt` + `containers/3-pattern-command`(gesture_classifier 소스 복사) | Dockerfile에서 opencv-python-headless로 **재설치**해 GUI 의존성 제거 |
-| 2-vision-analysis | `mediapipe==1.0.1`, `numpy==2.5.2`, `opencv-python-headless==5.0.0.93`, `websockets==17.0.1`, `PyYAML==6.0.3`, `pydantic==2.13.4` | PyYAML/pydantic은 working tree에서 신규 추가(미커밋) |
-| 3-pattern-command | `fastapi`, `uvicorn[standard]`, `websockets` | numpy/mediapipe 불필요 — 순수 파이썬 판정 로직 |
-| 개발 전용 | `pytest==9.1.1` (2-vision-analysis/requirements-dev.txt) | 루트/3-pattern-command에는 dev 의존성 파일 없음 |
+| web | `fastapi`, `uvicorn[standard]`, `websockets`, `opencv-python`(GUI 빌드!), `numpy`, `qrcode[pil]` | 레포 루트 `requirements.txt` 사용 — headless 아님 |
+| canvas | web과 동일 `requirements.txt` + `containers/pattern-command`(gesture_classifier 소스 복사) | Dockerfile에서 opencv-python-headless로 **재설치**해 GUI 의존성 제거 |
+| vision-analysis | `mediapipe==1.0.1`, `numpy==2.5.2`, `opencv-python-headless==5.0.0.93`, `websockets==17.0.1`, `PyYAML==6.0.3`, `pydantic==2.13.4` | PyYAML/pydantic은 working tree에서 신규 추가(미커밋) |
+| pattern-command | `fastapi`, `uvicorn[standard]`, `websockets` | numpy/mediapipe 불필요 — 순수 파이썬 판정 로직 |
+| 개발 전용 | `pytest==9.1.1` (vision-analysis/requirements-dev.txt) | 루트/pattern-command에는 dev 의존성 파일 없음 |
 
 CI/포매터/타입체커(`ruff`, `mypy`, `pytest-cov`) 설정, `pyproject.toml`,
 `.github/workflows/`는 저장소 어디에도 없음 — Phase 5(§4) 전면 신규 작업.
@@ -174,7 +187,7 @@ CI/포매터/타입체커(`ruff`, `mypy`, `pytest-cov`) 설정, `pyproject.toml`
 
 ### A → B: `IngestFrameHeader` (TEXT JSON, 직후 BINARY raw 프레임)
 
-`containers/2-vision-analysis/app/contracts.py:IngestFrameHeader.from_json`이
+`containers/vision-analysis/app/contracts.py:IngestFrameHeader.from_json`이
 실제로 요구/검증하는 필드 (Container A가 보내는 초과 필드 `schema_version`,
 `frame_id`, `byte_length`는 파싱하지 않고 무시):
 
@@ -219,7 +232,7 @@ refactoring.md §5-1이 가정한 `schema_version`/`event`(STROKE_START 등)/`po
 필드는 **이 스키마에 존재하지 않는다.** 대신 "이벤트"에 해당하는 것은 아래
 C→D의 `command`다.
 
-### C → D: 명령 메시지 (TEXT JSON, `containers/3-pattern-command/app.py:_send_command`)
+### C → D: 명령 메시지 (TEXT JSON, `containers/pattern-command/app.py:_send_command`)
 
 ```json
 {
@@ -247,13 +260,13 @@ Phase 0 작성 시점에는 "수정하지 않고 기록만" 했으나, 아래 1~
 커밋 1에서 실제로 수정했다(회귀 없음 — 46+26개 기존 테스트 + characterization
 스냅샷 불변으로 확인). 4번은 Phase 1 범위 밖으로 남아 있다.
 
-1. ~~**[P0] `containers/3-pattern-command/app.py`가 working tree에서 깨져
+1. ~~**[P0] `containers/pattern-command/app.py`가 working tree에서 깨져
    있다.**~~ **[수정 완료, Phase 1 커밋 1]** `CANVAS_WS_URL`이 정의되지 않은
    채 참조되던 버그를 `settings.transport.canvas_ws_url`로 교체했다.
-2. ~~**[P0] `containers/3-pattern-command/config.py`의 `GestureConfig`가
+2. ~~**[P0] `containers/pattern-command/config.py`의 `GestureConfig`가
    `GestureClassifier`에 전달되지 않는다.**~~ **[수정 완료, Phase 1 커밋 1]**
    `GestureClassifier(**dataclasses.asdict(settings.gesture))`로 배선.
-3. ~~**[P0] `containers/1-canvas/app.py`의 캔버스 해상도가 두 곳에 다른
+3. ~~**[P0] `containers/canvas/app.py`의 캔버스 해상도가 두 곳에 다른
    표현으로 중복 하드코딩되어 있다.**~~ **[수정 완료, Phase 1 커밋 1+3]**
    `CANVAS_WIDTH-1`/`CANVAS_HEIGHT-1`로 단일화(커밋 1) 후 `canvas_config.py`의
    `config/canvas.yaml`로 이관(커밋 3).
@@ -273,18 +286,31 @@ Phase 0 작성 시점에는 "수정하지 않고 기록만" 했으나, 아래 1~
 
 - **루트 `pytest` 실행이 컨테이너 간 모듈명 충돌로 깨져 있었다.** 저장소
   루트에서 그냥 `pytest`를 실행하면 레거시 `tests/`와
-  `containers/2-vision-analysis/tests/`가 한 세션에 동시 수집되면서
+  `containers/vision-analysis/tests/`가 한 세션에 동시 수집되면서
   `app`/`containers` 모듈 해석이 꼬였다 — 루트 `pytest.ini`(`testpaths=tests`,
   `pythonpath=.`)로 해결. 각 컨테이너 테스트는 여전히 독립 실행이 원칙이다
   (`cd containers/<이름> && pytest`).
-- **동일한 이유로 `containers/1-canvas`에 `config.py`를 그대로 도입할 수
+- **동일한 이유로 `containers/canvas`에 `config.py`를 그대로 도입할 수
   없었다.** `drawing_canvas.py`가 `GestureClassifier` 재사용을 위해
-  `containers/3-pattern-command`를 `sys.path`에 얹는데, 그 디렉터리에도
+  `containers/pattern-command`를 `sys.path`에 얹는데, 그 디렉터리에도
   (Phase 1 커밋 2에서 추가한) 동일 이름의 `config.py`가 있어 sys.path 순서에
   따라 엉뚱한 설정이 로드되는 실제 충돌이 재현됐다 — `canvas_config.py`로
   이름을 바꿔 해결(Phase 1 커밋 3). 컨테이너 간에 sys.path를 공유시키는
   기존 관행(`drawing_canvas.py`, `containers/pattern_command/` shim)이 있는 한,
   새 모듈을 추가할 때는 이름 충돌 여부를 항상 확인해야 한다.
+- **디렉터리 번호 접두사 제거 시 `containers/pattern_command/` shim이 이미
+  깨져 있었다는 것을 발견했다.** 이 shim은 루트 `tests/test_gesture_classifier.py`가
+  단독 실행될 때는 `ModuleNotFoundError`로 실패했고, 전체 루트 `pytest` 세션에서만
+  `test_drawing_canvas.py`가 먼저 `gesture_classifier` 모듈을 `sys.modules`에
+  적재해주는 우연한 순서 덕에 "통과"하고 있었다(실행 순서 의존적 거짓 양성).
+  세 개의 루트 테스트를 각자가 실제로 검증하는 컨테이너의 `tests/`로 옮기고
+  shim을 완전히 삭제해 해결했다 — §2 "Phase 1에서 제거한 죽은 코드" 참고.
+- **`containers/vision-analysis/models/hand_landmarker.task`(7.8MB)가 git에
+  커밋되어 있다.** `.gitignore`가 `*.task`를 제외하도록 되어 있는데도 이미
+  추적 중인 상태로 남아 있다 — refactoring.md 8절 금지사항 5("모델 파일 등
+  대용량 바이너리의 Git 직접 커밋 금지")에 해당하지만, 다른 클론이 이 파일에
+  의존하고 있을 수 있어 이번 디렉터리 재편에서는 **건드리지 않았다**. 제거하려면
+  별도로 논의 후 진행할 것.
 
 ## 6. §2.4 특성화(characterization) 대상 매핑
 

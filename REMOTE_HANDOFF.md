@@ -16,12 +16,12 @@
 
 ## 주요 파일
 
-- `containers/0-web/app.py`: A FastAPI 웹 게이트웨이, JPEG→raw BGR 변환 및 B 전달
-- `containers/0-web/web/capture.html`: 후면 카메라, 640×480 JPEG, 기본 10FPS 송신
-- `containers/0-web/web/index.html`: QR, 원본, 캔버스, 명령/줌/추론/FPS 표시
-- `containers/1-canvas/app.py`: C 명령 WebSocket 수신 및 모니터 결과 전송
-- `containers/1-canvas/drawing_canvas.py`: OpenCV DrawingCanvas와 로컬 웹캠 앱
-- `containers/3-pattern-command/`: 실제 제스처 판정 구현
+- `containers/web/app.py`: A FastAPI 웹 게이트웨이, JPEG→raw BGR 변환 및 B 전달
+- `containers/web/web/capture.html`: 후면 카메라, 640×480 JPEG, 기본 10FPS 송신
+- `containers/web/web/index.html`: QR, 원본, 캔버스, 명령/줌/추론/FPS 표시
+- `containers/canvas/app.py`: C 명령 WebSocket 수신 및 모니터 결과 전송
+- `containers/canvas/drawing_canvas.py`: OpenCV DrawingCanvas와 로컬 웹캠 앱
+- `containers/pattern-command/`: 실제 제스처 판정 구현
 - `start_remote.ps1`: Docker Compose 전체 서비스와 ngrok 시작 및 종료
 - `app.py`: 기존 PC 웹캠/OpenCV 앱
 
@@ -56,7 +56,7 @@ B 담당 구현이 PRD 6.1 JSON 패킷과 재연결 백오프를 소유한다. �
 `inference_ms`다. `index_tip`은 0~1 정규화 좌표를 권장한다.
 
 주의: C 담당자의 실제 출력 URL/PRD 명칭이 다르면 `CANVAS_WS_URL` 및
-`containers/1-canvas/app.py`의 입력 어댑터를 병합 시 맞춰야 한다.
+`containers/canvas/app.py`의 입력 어댑터를 병합 시 맞춰야 한다.
 
 ## 실행
 

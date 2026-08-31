@@ -9,7 +9,7 @@
 **P1** = 사용자 체감 동작(임계값/캔버스 크기/화질)을 좌우 — 튜닝 편의를 위해
 이관. **P2** = 테스트 픽스처/문서 내 상수 등 이관 불필요.
 
-## Container A — `containers/0-web/`
+## Container A — `containers/web/`
 
 | 파일:라인 | 현재 값 | 상태 |
 |---|---|---|
@@ -18,7 +18,7 @@
 | `Dockerfile` | `EXPOSE`/포트 `8000` (docker-compose와 이중 관리) | 구조적 한계 — §"남은 항목" 참고 |
 | `web/capture.html`, `web/index.html` | 브라우저 JS의 `location.host` 사용 | 문제 없음(상대경로, 하드코딩 아님) |
 
-## Container D — `containers/1-canvas/`
+## Container D — `containers/canvas/`
 
 | 파일:라인 | 현재 값 | 상태 |
 |---|---|---|
@@ -29,7 +29,7 @@
 | `Dockerfile` | 포트 `8762` | 구조적 한계 — §"남은 항목" 참고 |
 | `drawing_canvas.py`의 `--model`/`--output`/`--canvas-width`/`--canvas-height`/`--camera` 등 | 디버그 CLI 전용 | 이관 완료(CLI 인자), 프로덕션 경로 아님 — 재작업 불필요 |
 
-## Container B — `containers/2-vision-analysis/`
+## Container B — `containers/vision-analysis/`
 
 Phase 0 시점에 이미 대부분 완료된 상태였고 이번 Phase 1에서 추가로 손대지 않음.
 
@@ -40,7 +40,7 @@ Phase 0 시점에 이미 대부분 완료된 상태였고 이번 Phase 1에서 �
 | `scripts/dev_camera_source.py`, `scripts/dev_pattern_sink.py` | `--host`/`--port`/`--fps` 등 | 이관 완료(CLI 인자), 테스트 인프라 아님 |
 | `app/config/__init__.py`, `app/config/schema.py` | 모델/파이프라인/One-Euro/전송/관측성 파라미터 21개 | **이관 완료** — env>YAML>코드기본값 + pydantic Fail-Fast |
 
-## Container C — `containers/3-pattern-command/`
+## Container C — `containers/pattern-command/`
 
 | 파일:라인 | 현재 값 | 상태 |
 |---|---|---|
@@ -59,7 +59,7 @@ Phase 0 시점에 이미 대부분 완료된 상태였고 이번 Phase 1에서 �
 
 ## 테스트/문서 내 상수 (이관 불필요, 참고용)
 
-`containers/2-vision-analysis/tests/*.py`의 `640`/`480` 등은 테스트 픽스처
+`containers/vision-analysis/tests/*.py`의 `640`/`480` 등은 테스트 픽스처
 값이며 실제 운영 설정과 결합되어 있지 않다 — 이관 대상 아님 (P2).
 
 ## 남은 항목 (Phase 1 범위 밖, 의도적으로 보류)
@@ -69,16 +69,16 @@ Phase 0 시점에 이미 대부분 완료된 상태였고 이번 Phase 1에서 �
    compose와 값을 완전히 단일 출처화하기 어렵다. refactoring.md의 CI 단계(Phase 5)에서
    두 값이 실제로 일치하는지 자동 검증하는 스텝을 추가하는 쪽이 현실적 — 지금
    억지로 통합하지 않는다.
-2. `containers/1-canvas/canvas_config*.py`를 `containers/3-pattern-command/config*.py`와
+2. `containers/canvas/canvas_config*.py`를 `containers/pattern-command/config*.py`와
    다른 이름으로 유지해야 하는 이유(sys.path 충돌)는 `canvas_config.py` 상단
    docstring에 기록해 두었다 — 향후 두 컨테이너 중 하나라도 이름을 바꾸면 이
    제약이 사라지는지 재검토할 것.
 
 ## 요약 — Phase 1 완료 현황
 
-- [x] **P0** `3-pattern-command`의 `CANVAS_WS_URL` 미정의 버그 수정 (커밋 1)
-- [x] **P0** `3-pattern-command`가 `GestureConfig`를 `GestureClassifier`에 실제로 전달하도록 배선 (커밋 1)
-- [x] **P0** `1-canvas`의 캔버스 해상도 중복 하드코딩 단일 출처화 (커밋 1)
+- [x] **P0** `pattern-command`의 `CANVAS_WS_URL` 미정의 버그 수정 (커밋 1)
+- [x] **P0** `pattern-command`가 `GestureConfig`를 `GestureClassifier`에 실제로 전달하도록 배선 (커밋 1)
+- [x] **P0** `canvas`의 캔버스 해상도 중복 하드코딩 단일 출처화 (커밋 1)
 - [x] **P1** Container C에 `config/pattern-command.yaml` 계층 도입 (커밋 2)
 - [x] **P1** Container D에 `config/canvas.yaml` 계층 도입 (커밋 3)
 - [x] **P1** Container A의 `SESSION_TOKEN` Fail-Fast 추가 (커밋 4)
