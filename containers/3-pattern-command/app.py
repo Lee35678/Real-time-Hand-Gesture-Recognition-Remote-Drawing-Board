@@ -15,13 +15,22 @@ from dataclasses import dataclass
 import websockets
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
-from config import load_settings
+from config import ConfigValidationError, load_settings, validate
 from gesture_classifier import GestureClassifier
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-logger = logging.getLogger("pattern-command")
-
 settings = load_settings()
+try:
+    validate(settings)  # Fail Fast: 잘못된 설정이면 uvicorn 기동 자체가 실패한다 (Pillar 1-2)
+except ConfigValidationError as exc:
+    logging.basicConfig(level=logging.CRITICAL, format="%(message)s")
+    logging.critical("configuration rejected, refusing to start: %s", exc)
+    raise SystemExit(1) from exc
+
+logging.basicConfig(
+    level=getattr(logging, settings.log_level.upper(), logging.INFO),
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+logger = logging.getLogger("pattern-command")
 
 app = FastAPI(title="Pattern Command")
 

@@ -1,0 +1,25 @@
+# containers/3-pattern-command 기본 설정.
+#
+# 우선순위: 환경변수 > config/pattern-command.{APP_ENV}.yaml > 이 파일 > 코드 기본값.
+# 값은 리팩토링 이전 gesture_classifier.py/index_finger.py의 하드코딩 기본값과
+# 동일하게 맞춰져 있다 (Phase 1: 구조만 이관, 동작 변경 없음 — refactoring.md 8절 금지사항 2).
+
+app:
+  env: dev
+
+gesture:
+  open_pip_angle_deg: 120.0
+  thumb_active_ratio: 0.65
+  zoom_start_closed_ratio: 0.80
+  zoom_start_open_ratio: 1.00
+  zoom_start_confirm_frames: 3
+  zoom_motion_ratio: 0.05
+  zoom_filter_alpha: 1.0
+  release_confirm_frames: 3
+  finger_window_size: 5
+  finger_required_open_votes: 4
+
+transport:
+  canvas_ws_url: ws://canvas:8762/commands/{session_id}
+
+log_level: INFO
