@@ -100,6 +100,11 @@ class PipelineConfig:
             "VISION_SHUTDOWN_JOIN_TIMEOUT_SEC", ("pipeline", "shutdown_join_timeout_sec"), 2.0
         )
     )
+    max_consecutive_malformed_frames: int = field(
+        default_factory=lambda: resolve_int(
+            "VISION_MAX_CONSECUTIVE_MALFORMED_FRAMES", ("pipeline", "max_consecutive_malformed_frames"), 30
+        )
+    )
 
 
 @dataclass(frozen=True)

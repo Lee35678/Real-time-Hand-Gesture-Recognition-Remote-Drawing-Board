@@ -56,6 +56,7 @@ class _PipelineSchema(BaseModel):
     egress_queue_max_size: int
     drain_poll_timeout_sec: float
     shutdown_join_timeout_sec: float
+    max_consecutive_malformed_frames: int
 
     @model_validator(mode="after")
     def _check_ranges(self) -> "_PipelineSchema":
@@ -67,6 +68,8 @@ class _PipelineSchema(BaseModel):
             raise ValueError(f"pipeline.near_edge_margin must be within [0.0, 0.5), got {self.near_edge_margin}")
         if self.egress_queue_max_size < 1:
             raise ValueError("pipeline.egress_queue_max_size must be >= 1")
+        if self.max_consecutive_malformed_frames < 1:
+            raise ValueError("pipeline.max_consecutive_malformed_frames must be >= 1")
         return self
 
 

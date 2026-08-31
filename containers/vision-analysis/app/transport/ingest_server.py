@@ -18,6 +18,7 @@ from websockets.exceptions import ConnectionClosed
 
 from ..config import Settings
 from ..contracts import ContractError, IngestFrameHeader, LandmarkPacket
+from ..errors import CameraReadError
 from ..observability.metrics import MetricsCollector
 from ..pipeline.runner import SessionPipeline
 
@@ -43,18 +44,31 @@ def _make_handler(settings: Settings, metrics: MetricsCollector, out_queue: "asy
         logger.info("ingest session started: %s", session_id)
 
         pending_header: IngestFrameHeader | None = None
+        consecutive_malformed = 0
+        max_malformed = settings.pipeline.max_consecutive_malformed_frames
+
+        def _malformed(reason: str, *args: object) -> None:
+            nonlocal consecutive_malformed
+            consecutive_malformed += 1
+            logger.warning("session %s: " + reason, session_id, *args)
+            if consecutive_malformed >= max_malformed:
+                raise CameraReadError(
+                    f"session {session_id}: {consecutive_malformed} consecutive malformed frames "
+                    f"(limit {max_malformed}) — closing session"
+                )
+
         try:
             async for message in websocket:
                 if isinstance(message, (bytes, bytearray)):
                     if pending_header is None:
-                        logger.warning("session %s: binary frame received without header, dropping", session_id)
+                        _malformed("binary frame received without header, dropping")
                         continue
                     header, pending_header = pending_header, None
 
                     if len(message) != header.expected_payload_size:
-                        logger.warning(
-                            "session %s seq=%s: payload size mismatch (expected %d, got %d)",
-                            session_id, header.seq, header.expected_payload_size, len(message),
+                        _malformed(
+                            "seq=%s: payload size mismatch (expected %d, got %d)",
+                            header.seq, header.expected_payload_size, len(message),
                         )
                         continue
 
@@ -69,14 +83,18 @@ def _make_handler(settings: Settings, metrics: MetricsCollector, out_queue: "asy
                         rotation=header.rotation,
                         mirrored=header.mirrored,
                     )
+                    consecutive_malformed = 0
                 else:
                     try:
                         pending_header = IngestFrameHeader.from_json(message)
                     except ContractError as exc:
-                        logger.warning("session %s: %s", session_id, exc)
                         pending_header = None
+                        _malformed("%s", exc)
         except ConnectionClosed:
             pass
+        except CameraReadError as exc:
+            logger.error("session %s: %s", session_id, exc)
+            await websocket.close(code=1011, reason="too many malformed frames")
         finally:
             pipeline.close()
             logger.info("ingest session ended: %s", session_id)

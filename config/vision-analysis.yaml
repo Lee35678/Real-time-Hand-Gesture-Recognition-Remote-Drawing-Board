@@ -25,6 +25,7 @@ pipeline:
   egress_queue_max_size: 8
   drain_poll_timeout_sec: 0.5
   shutdown_join_timeout_sec: 2.0
+  max_consecutive_malformed_frames: 30
 
 one_euro:
   min_cutoff: 1.0
