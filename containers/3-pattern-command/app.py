@@ -7,20 +7,21 @@ canvas service for the same session.
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
-import os
 from dataclasses import dataclass
 
 import websockets
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
+from config import load_settings
 from gesture_classifier import GestureClassifier
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("pattern-command")
 
-CANVAS_WS_URL = os.getenv("CANVAS_WS_URL", "ws://canvas:8762/commands/{session_id}")
+settings = load_settings()
 
 app = FastAPI(title="Pattern Command")
 
@@ -41,12 +42,12 @@ class SessionState:
 
     def __init__(self, session_id: str):
         self.session_id = session_id
-        self.classifier = GestureClassifier()
+        self.classifier = GestureClassifier(**dataclasses.asdict(settings.gesture))
         self._canvas_ws = None
 
     async def _canvas(self):
         if self._canvas_ws is None:
-            url = CANVAS_WS_URL.format(session_id=self.session_id)
+            url = settings.transport.canvas_ws_url.format(session_id=self.session_id)
             self._canvas_ws = await websockets.connect(url, max_size=None)
             logger.info("session %s: connected to canvas at %s", self.session_id, url)
         return self._canvas_ws

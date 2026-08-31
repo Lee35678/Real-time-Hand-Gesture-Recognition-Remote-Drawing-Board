@@ -121,9 +121,10 @@ class SessionPipeline:
         self._context_by_ts[ts] = pending
 
     def _drain_loop(self) -> None:
+        poll_timeout = self._settings.pipeline.drain_poll_timeout_sec
         while not self._closed:
             try:
-                result = self._result_queue.get(timeout=0.5)
+                result = self._result_queue.get(timeout=poll_timeout)
             except queue.Empty:
                 continue
 
@@ -198,5 +199,5 @@ class SessionPipeline:
 
     def close(self) -> None:
         self._closed = True
-        self._drain_thread.join(timeout=2.0)
+        self._drain_thread.join(timeout=self._settings.pipeline.shutdown_join_timeout_sec)
         self._landmarker.close()

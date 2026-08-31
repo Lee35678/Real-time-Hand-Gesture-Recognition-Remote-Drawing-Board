@@ -10,8 +10,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import signal
+import sys
 
-from .config import Settings, load_settings
+from .config import ConfigValidationError, Settings, load_settings, validate
 from .contracts import LandmarkPacket
 from .metrics import MetricsCollector, run_metrics_http_server
 from .transport.egress_client import run_egress_client
@@ -19,14 +20,15 @@ from .transport.ingest_server import run_ingest_server
 
 logger = logging.getLogger(__name__)
 
-EGRESS_QUEUE_MAXSIZE = 8
-
 
 async def run(settings: Settings) -> None:
-    metrics = MetricsCollector()
+    metrics = MetricsCollector(
+        window_size=settings.observability.metrics_window_size,
+        redetect_spike_ratio=settings.observability.palm_redetect_spike_ratio,
+    )
     run_metrics_http_server(metrics, settings.transport.metrics_host, settings.transport.metrics_port)
 
-    out_queue: "asyncio.Queue[LandmarkPacket]" = asyncio.Queue(maxsize=EGRESS_QUEUE_MAXSIZE)
+    out_queue: "asyncio.Queue[LandmarkPacket]" = asyncio.Queue(maxsize=settings.pipeline.egress_queue_max_size)
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(run_ingest_server(settings, metrics, out_queue), name="ingest-server")
@@ -56,6 +58,11 @@ def main() -> None:
         level=getattr(logging, settings.log_level.upper(), logging.INFO),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+    try:
+        validate(settings)
+    except ConfigValidationError as exc:
+        logger.critical("configuration rejected, refusing to start: %s", exc)
+        sys.exit(1)
     try:
         asyncio.run(run(settings))
     except (SystemExit, KeyboardInterrupt):

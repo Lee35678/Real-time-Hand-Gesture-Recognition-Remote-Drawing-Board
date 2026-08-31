@@ -36,23 +36,33 @@ class GestureClassifier:
         zoom_filter_alpha: float = 1.0,
         release_confirm_frames: int = 3,
         release_pip_angle_deg: float | None = None,
+        finger_window_size: int = 5,
+        finger_required_open_votes: int = 4,
     ) -> None:
         if not 0.0 < zoom_filter_alpha <= 1.0:
             raise ValueError("zoom_filter_alpha must be within (0, 1]")
         self.index_classifier = IndexFingerClassifier(
             open_pip_angle_deg=open_pip_angle_deg,
+            window_size=finger_window_size,
+            required_open_votes=finger_required_open_votes,
             finger_indices=(5, 6, 7, 8),
         )
         self.middle_classifier = IndexFingerClassifier(
             open_pip_angle_deg=open_pip_angle_deg,
+            window_size=finger_window_size,
+            required_open_votes=finger_required_open_votes,
             finger_indices=(9, 10, 11, 12),
         )
         self.ring_classifier = IndexFingerClassifier(
             open_pip_angle_deg=open_pip_angle_deg,
+            window_size=finger_window_size,
+            required_open_votes=finger_required_open_votes,
             finger_indices=(13, 14, 15, 16),
         )
         self.pinky_classifier = IndexFingerClassifier(
             open_pip_angle_deg=open_pip_angle_deg,
+            window_size=finger_window_size,
+            required_open_votes=finger_required_open_votes,
             finger_indices=(17, 18, 19, 20),
         )
         self.thumb_active_ratio = thumb_active_ratio

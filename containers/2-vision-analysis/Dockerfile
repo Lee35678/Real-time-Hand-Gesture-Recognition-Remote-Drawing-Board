@@ -20,8 +20,10 @@ RUN mkdir -p models \
     && curl -fL "$HAND_LANDMARKER_MODEL_URL" -o models/hand_landmarker.task
 
 COPY containers/2-vision-analysis/app ./app
+COPY config/vision-analysis*.yaml ./config/
 
 ENV HAND_LANDMARKER_MODEL_PATH=/app/models/hand_landmarker.task \
+    APP_ENV=prod \
     PYTHONUNBUFFERED=1
 
 # 8760: Container A 프레임 수신(ingest), 8763: /health, /metrics (8762는 canvas 서비스가 사용 중)

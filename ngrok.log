@@ -247,3 +247,11 @@ t=2026-08-26T15:40:22+0900 lvl=warn msg="failed to open private leg" id=39dd7490
 t=2026-08-26T15:40:23+0900 lvl=warn msg="failed to open private leg" id=b792bf19e7c6 privaddr=localhost:8000 err="dial tcp [::1]:8000: connectex: No connection could be made because the target machine actively refused it."
 t=2026-08-26T15:40:26+0900 lvl=warn msg="failed to open private leg" id=14f02257244c privaddr=localhost:8000 err="dial tcp [::1]:8000: connectex: No connection could be made because the target machine actively refused it."
 t=2026-08-26T15:40:27+0900 lvl=warn msg="failed to open private leg" id=5250a192fd28 privaddr=localhost:8000 err="dial tcp [::1]:8000: connectex: No connection could be made because the target machine actively refused it."
+t=2026-08-26T18:52:56+0900 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=e5a57abd25c1 err="read tcp 172.30.1.28:60969->3.113.222.51:443: wsarecv: An existing connection was forcibly closed by the remote host."
+t=2026-08-26T18:52:56+0900 lvl=eror msg="heartbeat timeout, terminating session" obj=tunnels.session obj=csess id=5797e0c23b5f clientid=117b17c9d3a9519032c9d54bd45d28ad
+t=2026-08-26T18:52:56+0900 lvl=eror msg="failed to reconnect session" obj=tunnels.session err="failed to dial ngrok server with address \"connect.ngrok-agent.com:443\": dial tcp: lookup connect.ngrok-agent.com: no such host"
+t=2026-08-26T18:52:57+0900 lvl=eror msg="failed to reconnect session" obj=tunnels.session err="failed to dial ngrok server with address \"connect.ngrok-agent.com:443\": dial tcp: lookup connect.ngrok-agent.com: no such host"
+t=2026-08-26T18:52:58+0900 lvl=eror msg="failed to reconnect session" obj=tunnels.session err="failed to dial ngrok server with address \"connect.ngrok-agent.com:443\": dial tcp: lookup connect.ngrok-agent.com: no such host"
+t=2026-08-26T18:53:00+0900 lvl=eror msg="failed to reconnect session" obj=tunnels.session err="failed to dial ngrok server with address \"connect.ngrok-agent.com:443\": dial tcp: lookup connect.ngrok-agent.com: no such host"
+t=2026-08-26T18:53:04+0900 lvl=info msg="client session established" obj=tunnels.session
+t=2026-08-26T18:53:04+0900 lvl=info msg="tunnel session started" obj=tunnels.session

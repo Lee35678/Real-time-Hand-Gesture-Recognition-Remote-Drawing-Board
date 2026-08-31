@@ -20,7 +20,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-REDETECT_SPIKE_RATIO = 2.0
+DEFAULT_REDETECT_SPIKE_RATIO = 2.0
 
 
 @dataclass(frozen=True)
@@ -44,8 +44,9 @@ class MetricsSnapshot:
 
 
 class MetricsCollector:
-    def __init__(self, window_size: int = 300):
+    def __init__(self, window_size: int = 300, redetect_spike_ratio: float = DEFAULT_REDETECT_SPIKE_RATIO):
         self._window_size = window_size
+        self._redetect_spike_ratio = redetect_spike_ratio
         self._inference_ms: Deque[float] = deque(maxlen=window_size)
         self._hand_present: Deque[bool] = deque(maxlen=window_size)
         self._redetect_flags: Deque[bool] = deque(maxlen=window_size)
@@ -56,7 +57,7 @@ class MetricsCollector:
     def record_inference(self, duration_ms: float, hand_present: bool) -> None:
         with self._lock:
             median = float(np.median(self._inference_ms)) if self._inference_ms else duration_ms
-            likely_redetect = median > 0 and duration_ms >= median * REDETECT_SPIKE_RATIO
+            likely_redetect = median > 0 and duration_ms >= median * self._redetect_spike_ratio
 
             self._inference_ms.append(duration_ms)
             self._hand_present.append(hand_present)
