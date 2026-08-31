@@ -139,6 +139,18 @@ class _SettingsSchema(BaseModel):
     transport: _TransportSchema
     observability: _ObservabilitySchema
     log_level: Literal["DEBUG", "INFO", "WARN", "WARNING", "ERROR", "CRITICAL"]
+    log_format: Literal["console", "json"]
+    log_path: str
+    log_max_bytes: int
+    log_backup_count: int
+
+    @model_validator(mode="after")
+    def _check_logging_ranges(self) -> "_SettingsSchema":
+        if self.log_max_bytes < 1:
+            raise ValueError("log_max_bytes must be >= 1")
+        if self.log_backup_count < 0:
+            raise ValueError("log_backup_count must be >= 0")
+        return self
 
 
 def _settings_to_dict(settings: "Settings") -> dict:
@@ -149,6 +161,10 @@ def _settings_to_dict(settings: "Settings") -> dict:
         "transport": vars(settings.transport),
         "observability": vars(settings.observability),
         "log_level": settings.log_level,
+        "log_format": settings.log_format,
+        "log_path": settings.log_path,
+        "log_max_bytes": settings.log_max_bytes,
+        "log_backup_count": settings.log_backup_count,
     }
 
 

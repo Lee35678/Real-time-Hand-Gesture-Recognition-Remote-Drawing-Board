@@ -38,7 +38,7 @@ async def _drain_into_spool(
             if len(spool) >= spool.maxlen:
                 logger.warning(
                     "egress spool full (%d events); dropping oldest spooled packet for seq=%s",
-                    spool.maxlen, packet.seq,
+                    spool.maxlen, packet.seq, extra={"event": "spool_overflow"},
                 )
             spool.append(packet)  # maxlen deque auto-evicts the oldest (leftmost) entry
             spool_ready.notify_all()
@@ -56,7 +56,10 @@ async def _send_loop(
     while True:
         try:
             async with connect(url) as ws:
-                logger.info("egress connected to %s (%d spooled packet(s) pending)", url, len(spool))
+                logger.info(
+                    "egress connected to %s (%d spooled packet(s) pending)", url, len(spool),
+                    extra={"event": "egress_connected"},
+                )
                 delay = settings.transport.egress_reconnect_min_delay
                 while True:
                     async with spool_ready:
@@ -67,7 +70,10 @@ async def _send_loop(
             raise
         except (ConnectionClosed, OSError) as exc:
             jittered = delay + random.uniform(0, delay * 0.25)
-            logger.warning("egress connection to %s failed (%s); retrying in %.1fs", url, exc, jittered)
+            logger.warning(
+                "egress connection to %s failed (%s); retrying in %.1fs", url, exc, jittered,
+                extra={"event": "egress_disconnected"},
+            )
             await asyncio.sleep(jittered)
             delay = min(delay * 2, max_delay)
 

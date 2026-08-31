@@ -19,6 +19,7 @@ from websockets.exceptions import ConnectionClosed
 from ..config import Settings
 from ..contracts import ContractError, IngestFrameHeader, LandmarkPacket
 from ..errors import CameraReadError
+from ..observability.logging import set_frame_id, set_session_id
 from ..observability.metrics import MetricsCollector
 from ..pipeline.runner import SessionPipeline
 
@@ -39,9 +40,10 @@ def _make_handler(settings: Settings, metrics: MetricsCollector, out_queue: "asy
             await websocket.close(code=1008, reason="expected path /ingest/{session_id}")
             return
 
+        set_session_id(session_id)
         loop = asyncio.get_running_loop()
         pipeline = SessionPipeline(settings, session_id, metrics, loop, out_queue)
-        logger.info("ingest session started: %s", session_id)
+        logger.info("ingest session started: %s", session_id, extra={"event": "session_started"})
 
         pending_header: IngestFrameHeader | None = None
         consecutive_malformed = 0
@@ -50,7 +52,9 @@ def _make_handler(settings: Settings, metrics: MetricsCollector, out_queue: "asy
         def _malformed(reason: str, *args: object) -> None:
             nonlocal consecutive_malformed
             consecutive_malformed += 1
-            logger.warning("session %s: " + reason, session_id, *args)
+            logger.warning(
+                "session %s: " + reason, session_id, *args, extra={"event": "frame_dropped"}
+            )
             if consecutive_malformed >= max_malformed:
                 raise CameraReadError(
                     f"session {session_id}: {consecutive_malformed} consecutive malformed frames "
@@ -72,6 +76,7 @@ def _make_handler(settings: Settings, metrics: MetricsCollector, out_queue: "asy
                         )
                         continue
 
+                    set_frame_id(header.seq)
                     frame = np.frombuffer(message, dtype=np.uint8).reshape(header.height, header.width, 3)
                     pipeline.offer_frame(
                         seq=header.seq,
@@ -93,11 +98,13 @@ def _make_handler(settings: Settings, metrics: MetricsCollector, out_queue: "asy
         except ConnectionClosed:
             pass
         except CameraReadError as exc:
-            logger.error("session %s: %s", session_id, exc)
+            logger.error("session %s: %s", session_id, exc, extra={"event": "session_aborted"})
             await websocket.close(code=1011, reason="too many malformed frames")
         finally:
             pipeline.close()
-            logger.info("ingest session ended: %s", session_id)
+            logger.info("ingest session ended: %s", session_id, extra={"event": "session_ended"})
+            set_session_id(None)
+            set_frame_id(None)
 
     return handler
 

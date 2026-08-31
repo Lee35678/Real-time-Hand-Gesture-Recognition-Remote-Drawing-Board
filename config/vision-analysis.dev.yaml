@@ -3,3 +3,4 @@ app:
   env: dev
 
 log_level: DEBUG
+log_format: console

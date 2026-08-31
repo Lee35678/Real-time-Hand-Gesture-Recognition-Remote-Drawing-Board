@@ -16,6 +16,7 @@ import sys
 from .config import ConfigValidationError, ModelConfig, Settings, load_settings, validate
 from .contracts import LandmarkPacket
 from .errors import ModelLoadError
+from .observability.logging import configure_logging
 from .observability.metrics import MetricsCollector, run_metrics_http_server
 from .transport.egress_client import run_egress_client
 from .transport.ingest_server import run_ingest_server
@@ -44,7 +45,7 @@ async def run(settings: Settings) -> None:
 
         def _request_shutdown() -> None:
             if not stop.done():
-                logger.info("shutdown signal received")
+                logger.info("shutdown signal received", extra={"event": "shutdown_requested"})
                 stop.set_result(None)
 
         for sig in (signal.SIGINT, signal.SIGTERM):
@@ -70,24 +71,31 @@ def _verify_model_loads(model: ModelConfig) -> None:
 
 def main() -> None:
     settings = load_settings()
-    logging.basicConfig(
-        level=getattr(logging, settings.log_level.upper(), logging.INFO),
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    configure_logging(
+        level=settings.log_level,
+        log_format=settings.log_format,
+        log_path=settings.log_path or None,
+        max_bytes=settings.log_max_bytes,
+        backup_count=settings.log_backup_count,
     )
     try:
         validate(settings)
     except ConfigValidationError as exc:
-        logger.critical("configuration rejected, refusing to start: %s", exc)
+        logger.critical(
+            "configuration rejected, refusing to start: %s", exc, extra={"event": "config_rejected"}
+        )
         sys.exit(1)
     try:
         _verify_model_loads(settings.model)
     except ModelLoadError as exc:
-        logger.critical("model failed to load, refusing to start: %s", exc)
+        logger.critical(
+            "model failed to load, refusing to start: %s", exc, extra={"event": "model_load_failed"}
+        )
         sys.exit(1)
     try:
         asyncio.run(run(settings))
     except (SystemExit, KeyboardInterrupt):
-        logger.info("vision-analysis shutting down")
+        logger.info("vision-analysis shutting down", extra={"event": "shutdown_complete"})
 
 
 if __name__ == "__main__":

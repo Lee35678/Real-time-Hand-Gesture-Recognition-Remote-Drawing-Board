@@ -49,3 +49,8 @@ observability:
   stage_log_every_n_frames: 100
 
 log_level: INFO
+log_format: console      # console(개발) | json(운영)
+log_path: ""             # 비우면 stdout만. 컨테이너 환경에서 파일 로테이션도 원하면 경로 지정
+log_rotation:
+  max_bytes: 10485760    # 10MB
+  backup_count: 5
