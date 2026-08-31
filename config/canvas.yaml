@@ -1,4 +1,4 @@
-# containers/1-canvas 기본 설정.
+# containers/canvas 기본 설정.
 #
 # 우선순위: 환경변수 > config/canvas.{APP_ENV}.yaml > 이 파일 > 코드 기본값.
 # 값은 리팩토링 이전 drawing_canvas.py/app.py의 하드코딩 기본값과 동일하게

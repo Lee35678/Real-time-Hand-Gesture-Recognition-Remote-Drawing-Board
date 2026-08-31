@@ -27,7 +27,7 @@ class IngestFrameHeader:
     """Container A가 프레임마다 먼저 보내는 JSON 헤더.
 
     직후에 width*height*channels 바이트의 binary 프레임(pixel 데이터)이 이어진다.
-    필드명은 Container A(`containers/0-web/app.py`)가 실제로 보내는 형식을 따른다
+    필드명은 Container A(`containers/web/app.py`)가 실제로 보내는 형식을 따른다
     (schema_version, channels, dtype, color_order, byte_length는 A가 함께 보내지만
     검증 외 용도로는 사용하지 않는다).
     """

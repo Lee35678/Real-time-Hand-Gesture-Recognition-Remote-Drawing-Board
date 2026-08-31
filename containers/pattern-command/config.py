@@ -4,7 +4,7 @@
 > config/pattern-command.yaml > 이 파일의 코드 기본값. 코드 기본값은 YAML 파일을 찾지
 못하는 예외적인 상황에서도 서비스가 리팩토링 이전과 동일한 값으로 기동할 수 있도록
 남겨둔 안전망이며, 정상 운영에서는 `config/pattern-command.yaml`이 실제 값의 출처다
-(containers/2-vision-analysis/app/config/__init__.py와 동일 패턴).
+(containers/vision-analysis/app/config/__init__.py와 동일 패턴).
 
 제스처 판정 임계값(GestureConfig)의 기본값은 리팩토링 이전 `gesture_classifier.py`/
 `index_finger.py`의 하드코딩 값과 동일하다 — characterization 스냅샷

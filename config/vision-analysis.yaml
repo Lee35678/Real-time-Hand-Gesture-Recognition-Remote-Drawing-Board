@@ -1,4 +1,4 @@
-# containers/2-vision-analysis 기본 설정.
+# containers/vision-analysis 기본 설정.
 #
 # 우선순위: 환경변수 > config/vision-analysis.{APP_ENV}.yaml > 이 파일 > 코드 기본값.
 # 값은 리팩토링 이전 app/config.py의 하드코딩 기본값과 동일하게 맞춰져 있다

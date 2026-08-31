@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from app import (
+from drawing_canvas import (
     DrawingCanvas,
     PerformanceMonitor,
     camera_to_canvas_point,

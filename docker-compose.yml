@@ -2,7 +2,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: containers/0-web/Dockerfile
+      dockerfile: containers/web/Dockerfile
     ports:
       - "8000:8000"
     environment:
@@ -15,7 +15,7 @@ services:
   canvas:
     build:
       context: .
-      dockerfile: containers/1-canvas/Dockerfile
+      dockerfile: containers/canvas/Dockerfile
     ports:
       - "8762:8762"
     environment:
@@ -24,7 +24,7 @@ services:
   vision-analysis:
     build:
       context: .
-      dockerfile: containers/2-vision-analysis/Dockerfile
+      dockerfile: containers/vision-analysis/Dockerfile
     ports:
       - "8760:8760" # ingest: Container A -> B (ws://vision-analysis:8760/ingest/{session_id})
       - "8763:8763" # /health, /metrics (8762는 canvas가 사용 중)
@@ -36,6 +36,6 @@ services:
   pattern-command:
     build:
       context: .
-      dockerfile: containers/3-pattern-command/Dockerfile
+      dockerfile: containers/pattern-command/Dockerfile
     environment:
       CANVAS_WS_URL: ws://canvas:8762/commands/{session_id}

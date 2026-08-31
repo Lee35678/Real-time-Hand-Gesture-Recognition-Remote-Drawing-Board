@@ -1,7 +1,7 @@
 import unittest
 from dataclasses import dataclass
 
-from containers.pattern_command.index_finger import IndexFingerClassifier, joint_angle
+from index_finger import IndexFingerClassifier, joint_angle
 
 
 @dataclass

@@ -4,7 +4,7 @@ fastapi>=0.115,<1
 uvicorn[standard]>=0.34,<1
 qrcode[pil]>=8,<9
 websockets>=15,<16
-# PyYAML/pydantic are for containers/1-canvas's config layer (this file is shared
-# with containers/0-web, which doesn't need them but installs them harmlessly).
+# PyYAML/pydantic are for containers/canvas's config layer (this file is shared
+# with containers/web, which doesn't need them but installs them harmlessly).
 PyYAML>=6,<7
 pydantic>=2.9,<3

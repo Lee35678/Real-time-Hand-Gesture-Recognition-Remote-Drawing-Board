@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY containers/2-vision-analysis/requirements.txt ./requirements.txt
+COPY containers/vision-analysis/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 모델 번들은 이미지 빌드 시점에 내려받아 포함한다.
@@ -19,7 +19,7 @@ ARG HAND_LANDMARKER_MODEL_URL=https://storage.googleapis.com/mediapipe-models/ha
 RUN mkdir -p models \
     && curl -fL "$HAND_LANDMARKER_MODEL_URL" -o models/hand_landmarker.task
 
-COPY containers/2-vision-analysis/app ./app
+COPY containers/vision-analysis/app ./app
 COPY config/vision-analysis*.yaml ./config/
 
 ENV HAND_LANDMARKER_MODEL_PATH=/app/models/hand_landmarker.task \

@@ -1,15 +1,15 @@
-"""YAML + 환경변수 설정 로더 (containers/2-vision-analysis/app/config/loader.py와 동일 패턴).
+"""YAML + 환경변수 설정 로더 (containers/vision-analysis/app/config/loader.py와 동일 패턴).
 
-우선순위(refactoring.md Pillar 1-1): 환경변수 > config/pattern-command.{APP_ENV}.yaml
-> config/pattern-command.yaml > 코드 기본값.
+우선순위(refactoring.md Pillar 1-1): 환경변수 > config/canvas.{APP_ENV}.yaml >
+config/canvas.yaml > 코드 기본값.
 
 `config/` 디렉토리 위치는 실행 환경에 따라 다르다:
 - 로컬 개발(리포지토리에서 직접 실행): 리포지토리 루트의 `config/`
 - Docker 이미지: `WORKDIR /app` 기준 `/app/config/`
-  (Dockerfile이 `COPY config/pattern-command*.yaml ./config/`로 배치 — 이 컨테이너는
+  (Dockerfile이 `COPY config/canvas*.yaml ./config/`로 배치 — 이 컨테이너는
   vision-analysis와 달리 `app/` 하위 패키지 없이 파일이 `/app/` 바로 아래 평평하게 놓인다)
 
-`PATTERN_COMMAND_CONFIG_DIR` 환경변수로 명시적으로 지정할 수도 있다.
+`CANVAS_CONFIG_DIR` 환경변수로 명시적으로 지정할 수도 있다.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from typing import Any, Optional
 
 import yaml
 
-_SERVICE_NAME = "pattern-command"
+_SERVICE_NAME = "canvas"
 
 
 def _app_env() -> str:
@@ -29,7 +29,7 @@ def _app_env() -> str:
 
 
 def _find_config_dir() -> Optional[Path]:
-    override = os.environ.get("PATTERN_COMMAND_CONFIG_DIR")
+    override = os.environ.get("CANVAS_CONFIG_DIR")
     if override:
         candidate = Path(override)
         return candidate if candidate.is_dir() else None

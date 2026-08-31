@@ -2,8 +2,8 @@
 
 Feeds the 6 synthetic sequences in synthetic_sequences.py through the CURRENT
 (pre-refactor) pure logic — HandLandmarksFilter + geometry helpers from
-containers/2-vision-analysis, and GestureClassifier from
-containers/3-pattern-command — and dumps every frame's output. No camera, no
+containers/vision-analysis, and GestureClassifier from
+containers/pattern-command — and dumps every frame's output. No camera, no
 video file, no MediaPipe runtime is touched.
 
 Run again (`python tests/fixtures/generate_characterization.py`) only to
@@ -23,11 +23,11 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-VISION_APP_DIR = REPO_ROOT / "containers" / "2-vision-analysis"
-PATTERN_COMMAND_DIR = REPO_ROOT / "containers" / "3-pattern-command"
+VISION_APP_DIR = REPO_ROOT / "containers" / "vision-analysis"
+PATTERN_COMMAND_DIR = REPO_ROOT / "containers" / "pattern-command"
 
-# containers/3-pattern-command/app.py would otherwise shadow the `app` package
-# in containers/2-vision-analysis ('app' resolves to whichever is earlier on
+# containers/pattern-command/app.py would otherwise shadow the `app` package
+# in containers/vision-analysis ('app' resolves to whichever is earlier on
 # sys.path) — import everything from the `app` package before adding
 # PATTERN_COMMAND_DIR to sys.path.
 sys.path.insert(0, str(VISION_APP_DIR))
@@ -52,10 +52,10 @@ def _landmark_to_dict(lm: Landmark) -> dict:
 
 def _run_world_sequence(seq) -> list[dict]:
     """Drives GestureClassifier() with default thresholds (matches
-    containers/3-pattern-command/config.py's current defaults).
+    containers/pattern-command/config.py's current defaults).
 
     On a None-landmarks frame this calls classifier.reset(), mirroring
-    containers/3-pattern-command/app.py's SessionState.handle_packet branch for
+    containers/pattern-command/app.py's SessionState.handle_packet branch for
     hand_present=false (that branch itself is not pure/importable headless).
     """
     classifier = GestureClassifier()
@@ -80,7 +80,7 @@ def _run_image_sequence(seq) -> list[dict]:
     """Drives HandLandmarksFilter() with its class defaults (min_cutoff=1.0,
     beta=0.3, d_cutoff=1.0 — identical to config/vision-analysis.yaml's
     one_euro.* defaults) plus the geometry helpers used by
-    containers/2-vision-analysis/app/pipeline.py::_handle_result.
+    containers/vision-analysis/app/pipeline.py::_handle_result.
     """
     filt = HandLandmarksFilter()
     out = []

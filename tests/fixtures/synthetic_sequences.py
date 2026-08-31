@@ -8,11 +8,11 @@ Two coordinate spaces are used, matching how the real pipeline actually splits w
 
 - ``"normalized_image"``: values roughly in [0, 1], the space MediaPipe's
   ``hand_landmarks`` / ``LandmarkPacket.landmarks`` use. Consumed by
-  ``containers/2-vision-analysis/app/one_euro_filter.py`` (smoothing) and
+  ``containers/vision-analysis/app/one_euro_filter.py`` (smoothing) and
   ``app/geometry.py`` (hand_scale / is_near_edge / max_displacement).
 - ``"world_meters"``: metric, camera-distance-invariant coordinates, the space
   ``hand_world_landmarks`` / ``LandmarkPacket.world_landmarks`` use. Consumed by
-  ``containers/3-pattern-command/gesture_classifier.py`` and ``index_finger.py``.
+  ``containers/pattern-command/gesture_classifier.py`` and ``index_finger.py``.
 
 refactoring.md's ยง2.4 table was written against a generic "single pinch-distance
 threshold" PRD template. The gesture engine actually implemented here has no such
@@ -60,7 +60,7 @@ class SyntheticSequence:
 
 
 # --------------------------------------------------------------------------- #
-# world_meters helpers (drives containers/3-pattern-command)
+# world_meters helpers (drives containers/pattern-command)
 # --------------------------------------------------------------------------- #
 
 # Fixed synthetic palm skeleton. Values are plausible adult-hand metric offsets
@@ -169,7 +169,7 @@ def _hand_frame(
 
 
 # --------------------------------------------------------------------------- #
-# normalized_image helpers (drives containers/2-vision-analysis)
+# normalized_image helpers (drives containers/vision-analysis)
 # --------------------------------------------------------------------------- #
 
 # A fixed, roughly hand-shaped set of 21 relative (dx, dy) offsets (not a real
@@ -263,7 +263,7 @@ def threshold_chatter() -> SyntheticSequence:
 
 
 def hand_lost_midway() -> SyntheticSequence:
-    """Real analog: the hand-presence gap that containers/3-pattern-command's
+    """Real analog: the hand-presence gap that containers/pattern-command's
     SessionState.handle_packet reacts to by calling classifier.reset() when
     `packet["hand_present"]` is false. That dispatch line is orchestration
     (websocket-bound), not a pure function — this fixture reproduces just the

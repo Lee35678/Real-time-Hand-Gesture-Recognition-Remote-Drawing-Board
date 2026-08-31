@@ -4,7 +4,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
-_SOURCE = Path(__file__).resolve().parent / "containers/1-canvas/drawing_canvas.py"
+_SOURCE = Path(__file__).resolve().parent / "containers/canvas/drawing_canvas.py"
 _SPEC = importlib.util.spec_from_file_location("drawing_canvas_local", _SOURCE)
 if _SPEC is None or _SPEC.loader is None:
     raise ImportError(f"Could not load canvas application: {_SOURCE}")

@@ -1,4 +1,4 @@
-# containers/3-pattern-command 기본 설정.
+# containers/pattern-command 기본 설정.
 #
 # 우선순위: 환경변수 > config/pattern-command.{APP_ENV}.yaml > 이 파일 > 코드 기본값.
 # 값은 리팩토링 이전 gesture_classifier.py/index_finger.py의 하드코딩 기본값과

@@ -1,4 +1,4 @@
-"""설정 스키마 검증 — Fail Fast (containers/2-vision-analysis/app/config/schema.py와 동일 패턴).
+"""설정 스키마 검증 — Fail Fast (containers/vision-analysis/app/config/schema.py와 동일 패턴).
 
 잘못된 설정은 첫 세션이 연결됐을 때 조용히 오작동하거나 `ValueError`로 죽는 게
 아니라 **기동 즉시**(uvicorn이 `app.py`를 import하는 시점) 명확한 메시지와 함께

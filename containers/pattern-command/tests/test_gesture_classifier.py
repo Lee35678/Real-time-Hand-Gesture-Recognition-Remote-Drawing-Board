@@ -1,8 +1,8 @@
 import unittest
 import math
 
-from containers.pattern_command.gesture_classifier import GestureClassifier
-from test_index_finger import Point
+from gesture_classifier import GestureClassifier
+from .test_index_finger import Point
 
 
 def landmarks(index_open=True, middle_open=False, thumb_active=False, thumb_offset=1.0):

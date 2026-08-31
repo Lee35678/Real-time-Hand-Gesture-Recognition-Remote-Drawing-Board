@@ -2,7 +2,7 @@
 
 Container A 없이 Container B(vision-analysis)만 단독으로 켜서 테스트할 때,
 웹캠 또는 로컬 영상 파일을 ingest 프로토콜(JSON 헤더 + binary 프레임)에 맞춰
-스트리밍한다. 헤더 필드는 실제 Container A(containers/0-web/app.py)가 보내는
+스트리밍한다. 헤더 필드는 실제 Container A(containers/web/app.py)가 보내는
 형식을 그대로 따른다.
 
 사용 예:

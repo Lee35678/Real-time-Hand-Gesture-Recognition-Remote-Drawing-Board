@@ -15,9 +15,9 @@ import mediapipe as mp
 import numpy as np
 
 _HERE = Path(__file__).resolve().parent
-PATTERN_COMMAND_DIR = _HERE.parent / "3-pattern-command"
+PATTERN_COMMAND_DIR = _HERE.parent / "pattern-command"
 if not PATTERN_COMMAND_DIR.exists():
-    PATTERN_COMMAND_DIR = _HERE / "3-pattern-command"
+    PATTERN_COMMAND_DIR = _HERE / "pattern-command"
 if str(PATTERN_COMMAND_DIR) not in sys.path:
     sys.path.insert(0, str(PATTERN_COMMAND_DIR))
 from gesture_classifier import GestureClassifier
@@ -293,7 +293,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--model",
         type=Path,
-        default=Path("containers/2-vision-analysis/models/hand_landmarker.task"),
+        default=Path("containers/vision-analysis/models/hand_landmarker.task"),
     )
     parser.add_argument("--pip-angle-open", type=float, default=120.0)
     parser.add_argument(

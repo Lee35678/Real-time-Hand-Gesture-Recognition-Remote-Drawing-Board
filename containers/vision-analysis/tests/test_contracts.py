@@ -79,7 +79,7 @@ def test_present_packet_round_trips_through_json():
 
 
 def test_ingest_header_parses_valid_json():
-    # Container A(containers/0-web/app.py)가 실제로 보내는 헤더 형식.
+    # Container A(containers/web/app.py)가 실제로 보내는 헤더 형식.
     raw = json.dumps(
         {
             "schema_version": "1.0",
