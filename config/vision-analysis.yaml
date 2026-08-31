@@ -45,5 +45,7 @@ transport:
 observability:
   metrics_window_size: 300
   palm_redetect_spike_ratio: 2.0
+  target_latency_budget_ms: 50.0
+  stage_log_every_n_frames: 100
 
 log_level: INFO

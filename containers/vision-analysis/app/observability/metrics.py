@@ -12,7 +12,7 @@ import json
 import logging
 import threading
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Deque
 
@@ -31,6 +31,7 @@ class MetricsSnapshot:
     inference_ms_p50: float
     inference_ms_p95: float
     palm_redetect_rate: float
+    stage_latencies_ms: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -40,16 +41,27 @@ class MetricsSnapshot:
             "inference_ms_p50": self.inference_ms_p50,
             "inference_ms_p95": self.inference_ms_p95,
             "palm_redetect_rate": self.palm_redetect_rate,
+            "stage_latencies_ms": self.stage_latencies_ms,
         }
 
 
 class MetricsCollector:
-    def __init__(self, window_size: int = 300, redetect_spike_ratio: float = DEFAULT_REDETECT_SPIKE_RATIO):
+    def __init__(
+        self,
+        window_size: int = 300,
+        redetect_spike_ratio: float = DEFAULT_REDETECT_SPIKE_RATIO,
+        target_latency_budget_ms: float = 50.0,
+        stage_log_every_n_frames: int = 100,
+    ):
         self._window_size = window_size
         self._redetect_spike_ratio = redetect_spike_ratio
+        self._target_latency_budget_ms = target_latency_budget_ms
+        self._stage_log_every_n_frames = stage_log_every_n_frames
         self._inference_ms: Deque[float] = deque(maxlen=window_size)
         self._hand_present: Deque[bool] = deque(maxlen=window_size)
         self._redetect_flags: Deque[bool] = deque(maxlen=window_size)
+        self._stage_samples: dict[str, Deque[float]] = {}
+        self._total_frame_count = 0
         self._lock = threading.Lock()
         self._frames_total = 0
         self._frames_hand_present = 0
@@ -67,12 +79,55 @@ class MetricsCollector:
             if hand_present:
                 self._frames_hand_present += 1
 
+    def record_stage(self, stage: str, duration_ms: float) -> None:
+        """단계별 지연시간 기록 (Pillar 3-1). `stage="total"`은 프레임 도착부터
+        `LandmarkPacket` 조립 완료까지 이 컨테이너 내부에서 걸린 전체 시간이다
+        (Container A/C와의 네트워크 왕복은 포함하지 않는다).
+
+        `target_latency_budget_ms`를 넘는 "total" 프레임은 즉시 WARN 로깅하고,
+        `stage_log_every_n_frames`마다 전체 단계 스냅샷을 INFO로 남긴다.
+        """
+        with self._lock:
+            samples = self._stage_samples.setdefault(stage, deque(maxlen=self._window_size))
+            samples.append(duration_ms)
+
+            if stage == "total":
+                self._total_frame_count += 1
+                if duration_ms > self._target_latency_budget_ms:
+                    logger.warning(
+                        "frame total latency %.1fms exceeds budget %.1fms",
+                        duration_ms, self._target_latency_budget_ms,
+                    )
+                if self._total_frame_count % self._stage_log_every_n_frames == 0:
+                    logger.info(
+                        "stage latency snapshot (last %d frames): %s",
+                        self._total_frame_count, self._stage_latencies_locked(),
+                    )
+
+    def _stage_latencies_locked(self) -> dict[str, dict[str, float]]:
+        out: dict[str, dict[str, float]] = {}
+        for name, samples in self._stage_samples.items():
+            if not samples:
+                continue
+            arr = np.array(samples)
+            out[name] = {
+                "p50": float(np.percentile(arr, 50)),
+                "p95": float(np.percentile(arr, 95)),
+                "p99": float(np.percentile(arr, 99)),
+            }
+        return out
+
+    def stage_latencies(self) -> dict[str, dict[str, float]]:
+        with self._lock:
+            return self._stage_latencies_locked()
+
     def snapshot(self) -> MetricsSnapshot:
         with self._lock:
             times = np.array(self._inference_ms) if self._inference_ms else np.array([0.0])
             window_n = len(self._hand_present) or 1
             detection_rate = sum(self._hand_present) / window_n
             redetect_rate = sum(self._redetect_flags) / window_n
+            stage_latencies = self._stage_latencies_locked()
 
             return MetricsSnapshot(
                 frames_total=self._frames_total,
@@ -81,6 +136,7 @@ class MetricsCollector:
                 inference_ms_p50=float(np.percentile(times, 50)),
                 inference_ms_p95=float(np.percentile(times, 95)),
                 palm_redetect_rate=redetect_rate,
+                stage_latencies_ms=stage_latencies,
             )
 
 

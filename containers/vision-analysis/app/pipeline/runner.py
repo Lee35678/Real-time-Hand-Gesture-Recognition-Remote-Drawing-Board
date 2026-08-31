@@ -39,6 +39,7 @@ class _PendingFrame:
     height: int
     mp_image: object
     params: LetterboxParams
+    received_at_ns: int
 
 
 class SessionPipeline:
@@ -90,6 +91,7 @@ class SessionPipeline:
         mirrored: bool,
     ) -> None:
         """프레임 도착 시 호출된다. 처리 중이면 이전 대기 프레임을 버리고 최신 것으로 교체한다."""
+        received_at_ns = time.perf_counter_ns()
         prepared, params = prepare_for_inference(
             raw_frame,
             pixel_format,
@@ -99,6 +101,7 @@ class SessionPipeline:
             self._settings.pipeline.target_height,
             enable_clahe=self._settings.pipeline.enable_clahe,
         )
+        self._metrics.record_stage("preprocess", (time.perf_counter_ns() - received_at_ns) / 1e6)
         pending = _PendingFrame(
             session_id=self._session_id,
             seq=seq,
@@ -107,6 +110,7 @@ class SessionPipeline:
             height=height,
             mp_image=make_mp_image(prepared),
             params=params,
+            received_at_ns=received_at_ns,
         )
 
         with self._lock:
@@ -160,7 +164,7 @@ class SessionPipeline:
                 self._filter.reset()
                 self._prev_landmarks = None
             self._hand_was_present = False
-            return LandmarkPacket.absent(
+            packet = LandmarkPacket.absent(
                 session_id=ctx.session_id,
                 seq=ctx.seq,
                 capture_ts=ctx.capture_ts,
@@ -168,9 +172,16 @@ class SessionPipeline:
                 frame_w=ctx.width,
                 frame_h=ctx.height,
             )
+            self._metrics.record_stage("total", (time.perf_counter_ns() - ctx.received_at_ns) / 1e6)
+            return packet
 
         landmarks = unletterbox_landmarks(result.landmarks, ctx.params)
+
+        smoothing_start_ns = time.perf_counter_ns()
         filtered = self._filter.apply(landmarks, ctx.capture_ts)
+        self._metrics.record_stage("smoothing", (time.perf_counter_ns() - smoothing_start_ns) / 1e6)
+
+        postprocess_start_ns = time.perf_counter_ns()
         scale = hand_scale(filtered)
         near_edge = is_near_edge(filtered, self._settings.pipeline.near_edge_margin)
 
@@ -178,12 +189,13 @@ class SessionPipeline:
         if self._prev_landmarks is not None and scale > 0:
             displacement = max_displacement(self._prev_landmarks, filtered)
             outlier = displacement > scale * self._settings.pipeline.outlier_scale_multiplier
+        self._metrics.record_stage("postprocess", (time.perf_counter_ns() - postprocess_start_ns) / 1e6)
 
         if not outlier:
             self._prev_landmarks = filtered
         self._hand_was_present = True
 
-        return LandmarkPacket.present(
+        packet = LandmarkPacket.present(
             session_id=ctx.session_id,
             seq=ctx.seq,
             capture_ts=ctx.capture_ts,
@@ -196,6 +208,8 @@ class SessionPipeline:
             hand_scale=scale,
             quality=Quality(near_edge=near_edge, filtered=True, outlier_dropped=outlier),
         )
+        self._metrics.record_stage("total", (time.perf_counter_ns() - ctx.received_at_ns) / 1e6)
+        return packet
 
     def close(self) -> None:
         self._closed = True

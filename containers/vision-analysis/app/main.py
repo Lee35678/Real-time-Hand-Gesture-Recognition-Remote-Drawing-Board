@@ -28,6 +28,8 @@ async def run(settings: Settings) -> None:
     metrics = MetricsCollector(
         window_size=settings.observability.metrics_window_size,
         redetect_spike_ratio=settings.observability.palm_redetect_spike_ratio,
+        target_latency_budget_ms=settings.observability.target_latency_budget_ms,
+        stage_log_every_n_frames=settings.observability.stage_log_every_n_frames,
     )
     run_metrics_http_server(metrics, settings.transport.metrics_host, settings.transport.metrics_port)
 

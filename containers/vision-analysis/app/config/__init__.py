@@ -180,6 +180,16 @@ class ObservabilityConfig:
             "VISION_PALM_REDETECT_SPIKE_RATIO", ("observability", "palm_redetect_spike_ratio"), 2.0
         )
     )
+    target_latency_budget_ms: float = field(
+        default_factory=lambda: resolve_float(
+            "VISION_TARGET_LATENCY_BUDGET_MS", ("observability", "target_latency_budget_ms"), 50.0
+        )
+    )
+    stage_log_every_n_frames: int = field(
+        default_factory=lambda: resolve_int(
+            "VISION_STAGE_LOG_EVERY_N_FRAMES", ("observability", "stage_log_every_n_frames"), 100
+        )
+    )
 
 
 @dataclass(frozen=True)

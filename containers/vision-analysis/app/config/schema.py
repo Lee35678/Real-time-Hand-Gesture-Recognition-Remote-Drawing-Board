@@ -116,6 +116,8 @@ class _TransportSchema(BaseModel):
 class _ObservabilitySchema(BaseModel):
     metrics_window_size: int
     palm_redetect_spike_ratio: float
+    target_latency_budget_ms: float
+    stage_log_every_n_frames: int
 
     @model_validator(mode="after")
     def _check_ranges(self) -> "_ObservabilitySchema":
@@ -123,6 +125,10 @@ class _ObservabilitySchema(BaseModel):
             raise ValueError("observability.metrics_window_size must be >= 1")
         if self.palm_redetect_spike_ratio <= 1.0:
             raise ValueError("observability.palm_redetect_spike_ratio must be > 1.0")
+        if self.target_latency_budget_ms <= 0.0:
+            raise ValueError("observability.target_latency_budget_ms must be > 0")
+        if self.stage_log_every_n_frames < 1:
+            raise ValueError("observability.stage_log_every_n_frames must be >= 1")
         return self
 
 
