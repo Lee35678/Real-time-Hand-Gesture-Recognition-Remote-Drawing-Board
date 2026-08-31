@@ -5,18 +5,20 @@ import cv2,websockets
 from fastapi import FastAPI,WebSocket,WebSocketDisconnect
 from drawing_canvas import DrawingCanvas
 OUTPUT=os.getenv("WEB_CANVAS_OUTPUT_URL","ws://web:8000/ws/canvas-output/{session_id}")
+CANVAS_WIDTH=int(os.getenv("CANVAS_WIDTH","360")); CANVAS_HEIGHT=int(os.getenv("CANVAS_HEIGHT","640"))
 app=FastAPI(title="Drawing Canvas"); canvases={}
 def pack(meta,data):
     raw=json.dumps(meta,separators=(",",":")).encode(); return struct.pack(">I",len(raw))+raw+data
 def point(packet):
     p=packet.get("index_tip") or packet.get("pointer")
     if not isinstance(p,dict) or not all(isinstance(p.get(k),(int,float)) for k in ("x","y")): return None
-    x,y=p["x"],p["y"]; return (round(x*359),round(y*639)) if 0<=x<=1 and 0<=y<=1 else (round(x),round(y))
+    x,y=p["x"],p["y"]
+    return (round(x*(CANVAS_WIDTH-1)),round(y*(CANVAS_HEIGHT-1))) if 0<=x<=1 and 0<=y<=1 else (round(x),round(y))
 @app.get("/health")
 async def health(): return {"status":"ok","sessions":len(canvases)}
 @app.websocket("/commands/{session_id}")
 async def commands(ws:WebSocket,session_id:str):
-    await ws.accept(); canvas=canvases.setdefault(session_id,DrawingCanvas(360,640))
+    await ws.accept(); canvas=canvases.setdefault(session_id,DrawingCanvas(CANVAS_WIDTH,CANVAS_HEIGHT))
     try:
         async with websockets.connect(OUTPUT.format(session_id=session_id),max_size=None) as output:
             while True:
