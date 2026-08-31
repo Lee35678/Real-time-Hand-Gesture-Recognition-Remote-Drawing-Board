@@ -1,5 +1,4 @@
 import pytest
-
 from app.errors import (
     CameraReadError,
     DeviceUnavailableError,

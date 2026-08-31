@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from index_finger import IndexFingerClassifier, IndexFingerState, Landmark, distance_3d
 
@@ -121,7 +121,6 @@ class GestureClassifier:
         )
 
         spacing_ratio = None
-        zoom_delta = None
         palm_width = distance_3d(landmarks[5], landmarks[17])
         thumb_extension_ratio = (
             distance_3d(landmarks[4], landmarks[5]) / palm_width

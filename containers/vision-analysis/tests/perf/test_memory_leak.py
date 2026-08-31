@@ -19,7 +19,6 @@ import json
 import numpy as np
 import psutil
 import pytest
-
 from app.contracts import Handedness, LandmarkPacket, Quality
 from app.vision.geometry import Point, hand_scale, is_near_edge, max_displacement
 from app.vision.preprocess import prepare_for_inference
@@ -35,7 +34,7 @@ def test_pure_pipeline_functions_do_not_leak_over_10000_iterations():
     rng = np.random.default_rng(0)
     frame = rng.integers(0, 255, (480, 640, 3), dtype=np.uint8)
     filt = HandLandmarksFilter()
-    state = {"prev_landmarks": None}
+    state: dict[str, list[Point] | None] = {"prev_landmarks": None}
     process = psutil.Process()
 
     def run_one_iteration(i: int) -> None:

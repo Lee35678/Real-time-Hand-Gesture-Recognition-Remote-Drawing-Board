@@ -7,8 +7,9 @@ PRD 2.3 (랜드마크 인덱스), 3장 (③ 리사이즈 / ⑦ 좌표 역매핑 
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import NamedTuple, Sequence
+from typing import NamedTuple
 
 import numpy as np
 

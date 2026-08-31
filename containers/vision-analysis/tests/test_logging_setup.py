@@ -2,7 +2,6 @@ import json
 import logging
 
 import pytest
-
 from app.observability.logging import (
     ConsoleFormatter,
     JsonFormatter,

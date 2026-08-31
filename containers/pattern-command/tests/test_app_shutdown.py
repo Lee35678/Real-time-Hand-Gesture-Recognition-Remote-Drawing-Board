@@ -23,10 +23,10 @@ def test_shutdown_closes_every_session_and_clears_the_registry():
 
     session_a = app_module.SessionState("sess-a")
     ws_a = _FakeCanvasWebSocket()
-    session_a._canvas_ws = ws_a
+    session_a._canvas_ws = ws_a  # type: ignore[assignment]  # 덕타이핑 fake
     session_b = app_module.SessionState("sess-b")
     ws_b = _FakeCanvasWebSocket()
-    session_b._canvas_ws = ws_b
+    session_b._canvas_ws = ws_b  # type: ignore[assignment]  # 덕타이핑 fake
     app_module._sessions["sess-a"] = session_a
     app_module._sessions["sess-b"] = session_b
 

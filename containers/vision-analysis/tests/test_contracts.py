@@ -1,7 +1,6 @@
 import json
 
 import pytest
-
 from app.contracts import (
     ContractError,
     Handedness,

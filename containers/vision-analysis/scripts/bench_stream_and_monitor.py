@@ -104,7 +104,9 @@ async def _stream(url: str, camera_index: int, duration_sec: float, target_fps: 
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Stream real webcam frames while sampling RSS/CPU of a running vision-analysis process")
+    parser = argparse.ArgumentParser(
+        description="Stream real webcam frames while sampling RSS/CPU of a running vision-analysis process"
+    )
     parser.add_argument("--url", required=True, help="ws://host:port/ingest/session-id")
     parser.add_argument("--camera", type=int, default=0)
     parser.add_argument("--fps", type=float, default=30.0)

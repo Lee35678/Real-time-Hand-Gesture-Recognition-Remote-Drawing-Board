@@ -1,5 +1,4 @@
 import pytest
-
 from app.vision.geometry import NUM_LANDMARKS, Point
 from app.vision.smoothing import HandLandmarksFilter
 

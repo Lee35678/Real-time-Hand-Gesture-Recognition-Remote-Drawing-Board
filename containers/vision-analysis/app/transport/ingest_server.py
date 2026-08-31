@@ -33,9 +33,9 @@ def _parse_session_id(path: str) -> str | None:
     return None
 
 
-def _make_handler(settings: Settings, metrics: MetricsCollector, out_queue: "asyncio.Queue[LandmarkPacket]"):
+def _make_handler(settings: Settings, metrics: MetricsCollector, out_queue: asyncio.Queue[LandmarkPacket]):
     async def handler(websocket: ServerConnection) -> None:
-        session_id = _parse_session_id(websocket.request.path)
+        session_id = _parse_session_id(websocket.request.path)  # type: ignore[union-attr]  # 핸들러 진입 시점엔 항상 설정됨
         if session_id is None:
             await websocket.close(code=1008, reason="expected path /ingest/{session_id}")
             return
@@ -110,7 +110,7 @@ def _make_handler(settings: Settings, metrics: MetricsCollector, out_queue: "asy
 
 
 async def run_ingest_server(
-    settings: Settings, metrics: MetricsCollector, out_queue: "asyncio.Queue[LandmarkPacket]"
+    settings: Settings, metrics: MetricsCollector, out_queue: asyncio.Queue[LandmarkPacket]
 ) -> None:
     handler = _make_handler(settings, metrics, out_queue)
     async with serve(handler, settings.transport.ingest_host, settings.transport.ingest_port, max_size=None) as server:

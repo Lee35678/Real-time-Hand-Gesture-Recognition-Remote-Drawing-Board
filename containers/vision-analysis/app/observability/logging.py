@@ -21,17 +21,16 @@ import json
 import logging
 import logging.handlers
 import sys
-from typing import Optional
 
-_session_id_var: "contextvars.ContextVar[Optional[str]]" = contextvars.ContextVar("session_id", default=None)
-_frame_id_var: "contextvars.ContextVar[Optional[object]]" = contextvars.ContextVar("frame_id", default=None)
+_session_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("session_id", default=None)
+_frame_id_var: contextvars.ContextVar[object | None] = contextvars.ContextVar("frame_id", default=None)
 
 
-def set_session_id(session_id: Optional[str]) -> None:
+def set_session_id(session_id: str | None) -> None:
     _session_id_var.set(session_id)
 
 
-def set_frame_id(frame_id: Optional[object]) -> None:
+def set_frame_id(frame_id: object | None) -> None:
     _frame_id_var.set(frame_id)
 
 
@@ -39,8 +38,8 @@ class _ContextFilter(logging.Filter):
     """모든 로그 레코드에 현재 session_id/frame_id를 붙인다."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.session_id = _session_id_var.get()  # type: ignore[attr-defined]
-        record.frame_id = _frame_id_var.get()  # type: ignore[attr-defined]
+        record.session_id = _session_id_var.get()
+        record.frame_id = _frame_id_var.get()
         return True
 
 
@@ -95,7 +94,7 @@ def configure_logging(
     *,
     level: str = "INFO",
     log_format: str = "console",
-    log_path: Optional[str] = None,
+    log_path: str | None = None,
     max_bytes: int = 10 * 1024 * 1024,
     backup_count: int = 5,
 ) -> None:
@@ -121,6 +120,7 @@ def configure_logging(
         file_handler = logging.handlers.RotatingFileHandler(
             log_path, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
         )
-        file_handler.setFormatter(JsonFormatter())  # 파일은 항상 구조화 — 수집/파싱 대상이지 사람이 tail하는 용도가 아니다
+        # 파일은 항상 구조화 — 수집/파싱 대상이지 사람이 tail하는 용도가 아니다
+        file_handler.setFormatter(JsonFormatter())
         file_handler.addFilter(context_filter)
         root.addHandler(file_handler)

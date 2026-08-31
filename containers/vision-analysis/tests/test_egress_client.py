@@ -1,11 +1,10 @@
 import asyncio
+import contextlib
 from collections import deque
-
-import pytest
-from websockets.exceptions import ConnectionClosed
 
 from app.contracts import LandmarkPacket
 from app.transport import egress_client
+from websockets.exceptions import ConnectionClosed
 
 
 def _packet(seq: int) -> LandmarkPacket:
@@ -18,10 +17,8 @@ async def _run_briefly(coro, seconds: float = 0.05) -> None:
     task = asyncio.ensure_future(coro)
     await asyncio.sleep(seconds)
     task.cancel()
-    try:
+    with contextlib.suppress(asyncio.CancelledError):
         await task
-    except asyncio.CancelledError:
-        pass
 
 
 def test_drain_into_spool_moves_packets_from_queue_to_spool():
@@ -94,7 +91,7 @@ def test_send_loop_flushes_spool_in_order(monkeypatch):
     async def scenario():
         spool: deque = deque([_packet(0), _packet(1), _packet(2)], maxlen=10)
         spool_ready = asyncio.Condition()
-        await _run_briefly(egress_client._send_loop(_FakeSettings(), spool, spool_ready))
+        await _run_briefly(egress_client._send_loop(_FakeSettings(), spool, spool_ready))  # type: ignore[arg-type]  # 덕타이핑 fake
 
         assert len(spool) == 0
         assert len(sent) == 3
@@ -104,7 +101,7 @@ def test_send_loop_flushes_spool_in_order(monkeypatch):
 
 def test_send_loop_reconnects_and_resumes_from_spool_after_a_failed_send(monkeypatch):
     sent: list = []
-    connect_calls = []
+    connect_calls: list = []
 
     def _fake_connect(url):
         # First connection fails its 2nd send; the retry loop should reconnect
@@ -124,7 +121,7 @@ def test_send_loop_reconnects_and_resumes_from_spool_after_a_failed_send(monkeyp
     async def scenario():
         spool: deque = deque([_packet(i) for i in range(4)], maxlen=10)
         spool_ready = asyncio.Condition()
-        await _run_briefly(egress_client._send_loop(_FakeSettings(), spool, spool_ready), seconds=0.1)
+        await _run_briefly(egress_client._send_loop(_FakeSettings(), spool, spool_ready), seconds=0.1)  # type: ignore[arg-type]  # 덕타이핑 fake
 
         assert len(connect_calls) >= 2
         assert len(spool) == 0

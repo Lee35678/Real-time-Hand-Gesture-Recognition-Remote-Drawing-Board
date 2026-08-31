@@ -22,7 +22,6 @@ if str(PATTERN_COMMAND_DIR) not in sys.path:
     sys.path.insert(0, str(PATTERN_COMMAND_DIR))
 from gesture_classifier import GestureClassifier
 
-
 HAND_CONNECTIONS = (
     (0, 1), (1, 2), (2, 3), (3, 4),
     (0, 5), (5, 6), (6, 7), (7, 8),
@@ -336,7 +335,7 @@ def draw_capture_button(frame) -> None:
 
 def save_capture(output_dir: Path, frame, landmarks, world_landmarks, state) -> tuple[Path, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    capture_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    capture_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")  # local capture filename, not a stored timestamp
     image_path = output_dir / f"capture_{capture_id}.jpg"
     data_path = output_dir / f"capture_{capture_id}.json"
     if not cv2.imwrite(str(image_path), frame):
@@ -467,13 +466,16 @@ def main() -> None:
                         index_tip,
                         direction,
                     )
-                    lines = (
+                    lines: tuple[str, ...] = (
                         f"Command: {state.command}",
                         f"Locked mode: {state.mode} (release {state.release_frames}/3)",
-                        f"Index / middle / ring / pinky: {state.index.stable_label} / {state.middle.stable_label} / {state.ring.stable_label} / {state.pinky.stable_label}",
-                        f"PIP angle (index / middle): {state.index.pip_angle_deg:.1f} / {state.middle.pip_angle_deg:.1f} deg",
+                        f"Index / middle / ring / pinky: {state.index.stable_label} / "
+                        f"{state.middle.stable_label} / {state.ring.stable_label} / {state.pinky.stable_label}",
+                        f"PIP angle (index / middle): {state.index.pip_angle_deg:.1f} / "
+                        f"{state.middle.pip_angle_deg:.1f} deg",
                         f"thumb active / zoom mode: {state.thumb_active} / {state.zoom_mode_active}",
-                        f"thumb-index spacing / delta: {state.thumb_index_spacing_ratio or 0.0:.2f} / {state.zoom_delta or 0.0:+.2f}",
+                        f"thumb-index spacing / delta: {state.thumb_index_spacing_ratio or 0.0:.2f} / "
+                        f"{state.zoom_delta or 0.0:+.2f}",
                         f"zoom session direction: {state.zoom_session_direction or '-'}",
                     )
                     color = (40, 220, 40) if state.command != "IDLE" else (40, 80, 255)

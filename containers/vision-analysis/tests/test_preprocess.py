@@ -1,7 +1,10 @@
 import numpy as np
 import pytest
-
-from app.vision.preprocess import apply_geometric_correction, prepare_for_inference, to_rgb
+from app.vision.preprocess import (
+    apply_geometric_correction,
+    prepare_for_inference,
+    to_rgb,
+)
 
 
 def test_to_rgb_swaps_bgr_channels():

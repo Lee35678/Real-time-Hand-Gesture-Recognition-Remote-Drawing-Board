@@ -33,7 +33,7 @@ def _format_packet(packet: dict) -> str:
 
 
 async def _handler(websocket: ServerConnection) -> None:
-    print(f"Container C stand-in: session connected ({websocket.request.path})")
+    print(f"Container C stand-in: session connected ({websocket.request.path})")  # type: ignore[union-attr]  # 핸들러 진입 시점엔 항상 설정됨
     async for message in websocket:
         packet = json.loads(message)
         print(_format_packet(packet))

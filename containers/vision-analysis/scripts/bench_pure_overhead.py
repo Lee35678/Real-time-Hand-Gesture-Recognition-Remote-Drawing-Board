@@ -23,10 +23,15 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.contracts import Handedness, LandmarkPacket, Quality  # noqa: E402
-from app.vision.geometry import Point, hand_scale, is_near_edge, max_displacement  # noqa: E402
-from app.vision.preprocess import prepare_for_inference  # noqa: E402
-from app.vision.smoothing import HandLandmarksFilter  # noqa: E402
+from app.contracts import Handedness, LandmarkPacket, Quality
+from app.vision.geometry import (
+    Point,
+    hand_scale,
+    is_near_edge,
+    max_displacement,
+)
+from app.vision.preprocess import prepare_for_inference
+from app.vision.smoothing import HandLandmarksFilter
 
 
 def _percentiles(samples_ms: list[float]) -> dict:
@@ -50,13 +55,19 @@ def _time_calls(fn, iterations: int) -> list[float]:
 
 def bench_preprocess(iterations: int) -> dict:
     frame = np.random.default_rng(0).integers(0, 255, (480, 640, 3), dtype=np.uint8)
-    fn = lambda: prepare_for_inference(frame, "bgr8", 0, False, 640, 480, enable_clahe=False)  # noqa: E731
+
+    def fn():
+        return prepare_for_inference(frame, "bgr8", 0, False, 640, 480, enable_clahe=False)
+
     return _percentiles(_time_calls(fn, iterations))
 
 
 def bench_preprocess_with_clahe(iterations: int) -> dict:
     frame = np.random.default_rng(0).integers(0, 255, (480, 640, 3), dtype=np.uint8)
-    fn = lambda: prepare_for_inference(frame, "bgr8", 0, False, 640, 480, enable_clahe=True)  # noqa: E731
+
+    def fn():
+        return prepare_for_inference(frame, "bgr8", 0, False, 640, 480, enable_clahe=True)
+
     return _percentiles(_time_calls(fn, iterations))
 
 

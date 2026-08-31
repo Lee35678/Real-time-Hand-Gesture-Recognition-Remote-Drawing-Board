@@ -11,7 +11,6 @@ import logging
 import queue
 import time
 from dataclasses import dataclass
-from typing import Optional
 
 import mediapipe as mp
 from mediapipe.tasks import python as mp_python
@@ -33,10 +32,10 @@ _DELEGATE_MAP = {
 class LandmarkResult:
     timestamp_ms: int
     hand_present: bool
-    landmarks: Optional[list[Point]] = None
-    world_landmarks: Optional[list[Point]] = None
-    handedness_label: Optional[str] = None
-    handedness_score: Optional[float] = None
+    landmarks: list[Point] | None = None
+    world_landmarks: list[Point] | None = None
+    handedness_label: str | None = None
+    handedness_score: float | None = None
     inference_ms: float = 0.0
 
 
@@ -69,7 +68,7 @@ class HandLandmarkerSession:
     세션마다 새로 만들고 close()로 해제할 것.
     """
 
-    def __init__(self, model: ModelConfig, result_queue: "queue.Queue[LandmarkResult]"):
+    def __init__(self, model: ModelConfig, result_queue: queue.Queue[LandmarkResult]):
         self._model_cfg = model
         self._result_queue = result_queue
         self._ts_guard = MonotonicTimestampGuard()
@@ -100,7 +99,7 @@ class HandLandmarkerSession:
                 f"failed to load MediaPipe Hand Landmarker model from {model.asset_path!r}: {exc}"
             ) from exc
 
-    def submit(self, mp_image: "mp.Image", capture_ts_ms: int) -> int:
+    def submit(self, mp_image: mp.Image, capture_ts_ms: int) -> int:
         """프레임을 비동기 추론에 투입한다. 실제 사용된 타임스탬프를 반환한다 (FR-B-06)."""
         ts = self._ts_guard.next(capture_ts_ms)
         self._pending_started_at[ts] = time.monotonic()
@@ -155,5 +154,5 @@ class HandLandmarkerSession:
         self._landmarker.close()
 
 
-def make_mp_image(rgb_frame) -> "mp.Image":
+def make_mp_image(rgb_frame) -> mp.Image:
     return mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)

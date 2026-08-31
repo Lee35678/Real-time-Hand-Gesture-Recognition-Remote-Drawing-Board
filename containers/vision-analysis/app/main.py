@@ -8,12 +8,19 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import queue
 import signal
 import sys
 
-from .config import ConfigValidationError, ModelConfig, Settings, load_settings, validate
+from .config import (
+    ConfigValidationError,
+    ModelConfig,
+    Settings,
+    load_settings,
+    validate,
+)
 from .contracts import LandmarkPacket
 from .errors import ModelLoadError
 from .observability.logging import configure_logging
@@ -34,7 +41,7 @@ async def run(settings: Settings) -> None:
     )
     run_metrics_http_server(metrics, settings.transport.metrics_host, settings.transport.metrics_port)
 
-    out_queue: "asyncio.Queue[LandmarkPacket]" = asyncio.Queue(maxsize=settings.pipeline.egress_queue_max_size)
+    out_queue: asyncio.Queue[LandmarkPacket] = asyncio.Queue(maxsize=settings.pipeline.egress_queue_max_size)
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(run_ingest_server(settings, metrics, out_queue), name="ingest-server")
@@ -49,10 +56,9 @@ async def run(settings: Settings) -> None:
                 stop.set_result(None)
 
         for sig in (signal.SIGINT, signal.SIGTERM):
-            try:
+            # Windows에서 SIGTERM 핸들러 등록 불가 — Ctrl+C(SIGINT)만 지원
+            with contextlib.suppress(NotImplementedError):
                 loop.add_signal_handler(sig, _request_shutdown)
-            except NotImplementedError:
-                pass  # Windows에서 SIGTERM 핸들러 등록 불가 — Ctrl+C(SIGINT)만 지원
 
         await stop
         raise SystemExit(0)
@@ -64,7 +70,7 @@ def _verify_model_loads(model: ModelConfig) -> None:
     의존성을 피하려는 의도적 설계), 여기서 실제로 한 번 만들어보고 즉시
     닫아 검증한다. 세션당 재사용은 8.3 함정이므로 이 인스턴스는 검증
     용도로만 쓰고 버린다."""
-    probe_queue: "queue.Queue[LandmarkResult]" = queue.Queue()
+    probe_queue: queue.Queue[LandmarkResult] = queue.Queue()
     session = HandLandmarkerSession(model, probe_queue)
     session.close()
 

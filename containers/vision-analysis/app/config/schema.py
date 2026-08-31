@@ -32,7 +32,7 @@ class _ModelSchema(BaseModel):
     delegate: Literal["CPU", "GPU"]
 
     @model_validator(mode="after")
-    def _check_ranges(self) -> "_ModelSchema":
+    def _check_ranges(self) -> _ModelSchema:
         for name in (
             "min_hand_detection_confidence",
             "min_hand_presence_confidence",
@@ -59,7 +59,7 @@ class _PipelineSchema(BaseModel):
     max_consecutive_malformed_frames: int
 
     @model_validator(mode="after")
-    def _check_ranges(self) -> "_PipelineSchema":
+    def _check_ranges(self) -> _PipelineSchema:
         if self.target_width <= 0 or self.target_height <= 0:
             raise ValueError("pipeline.target_width/target_height must be positive")
         if self.target_fps <= 0.0:
@@ -79,7 +79,7 @@ class _OneEuroSchema(BaseModel):
     d_cutoff: float
 
     @model_validator(mode="after")
-    def _check_ranges(self) -> "_OneEuroSchema":
+    def _check_ranges(self) -> _OneEuroSchema:
         if self.min_cutoff <= 0.0 or self.d_cutoff <= 0.0:
             raise ValueError("one_euro.min_cutoff/d_cutoff must be positive")
         if self.beta < 0.0:
@@ -98,7 +98,7 @@ class _TransportSchema(BaseModel):
     metrics_port: int
 
     @model_validator(mode="after")
-    def _check_ranges(self) -> "_TransportSchema":
+    def _check_ranges(self) -> _TransportSchema:
         for name in ("ingest_port", "metrics_port"):
             port = getattr(self, name)
             if not 1 <= port <= 65535:
@@ -120,7 +120,7 @@ class _ObservabilitySchema(BaseModel):
     stage_log_every_n_frames: int
 
     @model_validator(mode="after")
-    def _check_ranges(self) -> "_ObservabilitySchema":
+    def _check_ranges(self) -> _ObservabilitySchema:
         if self.metrics_window_size < 1:
             raise ValueError("observability.metrics_window_size must be >= 1")
         if self.palm_redetect_spike_ratio <= 1.0:
@@ -145,7 +145,7 @@ class _SettingsSchema(BaseModel):
     log_backup_count: int
 
     @model_validator(mode="after")
-    def _check_logging_ranges(self) -> "_SettingsSchema":
+    def _check_logging_ranges(self) -> _SettingsSchema:
         if self.log_max_bytes < 1:
             raise ValueError("log_max_bytes must be >= 1")
         if self.log_backup_count < 0:
@@ -153,7 +153,7 @@ class _SettingsSchema(BaseModel):
         return self
 
 
-def _settings_to_dict(settings: "Settings") -> dict:
+def _settings_to_dict(settings: Settings) -> dict:
     return {
         "model": vars(settings.model),
         "pipeline": vars(settings.pipeline),
@@ -168,7 +168,7 @@ def _settings_to_dict(settings: "Settings") -> dict:
     }
 
 
-def validate(settings: "Settings", *, check_model_file: bool = True) -> None:
+def validate(settings: Settings, *, check_model_file: bool = True) -> None:
     """설정을 검증한다. 실패 시 `ConfigValidationError`를 던진다.
 
     Args:

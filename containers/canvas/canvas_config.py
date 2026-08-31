@@ -28,11 +28,11 @@ from canvas_config_schema import ConfigValidationError, validate
 
 __all__ = [
     "CanvasConfig",
-    "TransportConfig",
+    "ConfigValidationError",
     "Settings",
+    "TransportConfig",
     "load_settings",
     "validate",
-    "ConfigValidationError",
 ]
 
 

@@ -1,0 +1,49 @@
+[tool.ruff]
+# 개발 도구(ruff/mypy) 공용 설정 (refactoring.md Pillar 4-4).
+#
+# 이 저장소는 4개 컨테이너로 나뉘어 있고 각자 독립된 requirements*.txt를 쓴다 —
+# 하나로 빌드되는 패키지가 아니므로 이 파일은 패키징 목적이 아니라 순수하게
+# 린트/타입체크 도구 설정 전용이다.
+line-length = 120
+target-version = "py312"
+extend-exclude = [
+    "containers/*/web",
+    "containers/*/static",
+    "containers/*/templates",
+]
+
+[tool.ruff.lint]
+# E/F(pycodestyle+pyflakes) + I(import 정렬) + UP(최신 문법) + B(흔한 버그 패턴)
+# + SIM(단순화) + RUF 정도로 시작한다 — refactoring.md 4-4의 "strict 모드
+# 점진적 적용" 원칙을 ruff에도 그대로 적용: 처음부터 ASYNC/LOG/BLE/DTZ/PLW 같은
+# opinionated 카테고리까지 켜면 유지보수 부담이 과해서 이번 CI 도입에서는 뺐다.
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+# B905(zip strict=), SIM110(any()로 축약)은 index_finger.py/geometry.py처럼
+# characterization.json으로 보호되는 순수 판정 로직에서만 걸린다 — 지금 동작을
+# 바꾸는 건 이번 CI 도입 범위를 넘으므로(회귀 위험), 저장소 전체에서 끈다.
+ignore = ["B905", "SIM110"]
+
+[tool.ruff.lint.per-file-ignores]
+# containers/{web,canvas,pattern-command}/app.py는 리팩토링 이전부터 있던 의도적인
+# 밀집형 스타일(세미콜론/콜론으로 여러 문장, 쉼표 뒤 공백 생략, 긴 한 줄 라우트 정의)을
+# 유지한다 — 이 파일들의 로직을 건드릴 때마다 전체를 표준 스타일로 다시 쓰는 건 이번
+# CI 도입 범위를 넘는다.
+"containers/web/app.py" = ["E231", "E501", "E701", "E702", "E703"]
+"containers/canvas/app.py" = ["E231", "E501", "E701", "E702", "E703"]
+"containers/pattern-command/app.py" = ["E231", "E501", "E701", "E702", "E703"]
+# drawing_canvas.py는 pattern-command의 GestureClassifier를 재사용하려고 sys.path를
+# 먼저 조작한 다음 import한다 — 의도적인 순서라 E402는 여기서 의미가 없다.
+"containers/canvas/drawing_canvas.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+# 점진적 strict 적용(refactoring.md Pillar 1 DoD "mypy strict 모드 점진적 적용") —
+# 지금 당장 전면 strict를 켜면 4개 컨테이너 전체를 한 번에 타입힌트로 채워야 해서
+# 이번 CI 도입 범위를 넘는다. 우선 명백한 오류(정의되지 않은 이름, 잘못된 타입
+# 대입 등)만 잡는다.
+disallow_untyped_defs = false
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true

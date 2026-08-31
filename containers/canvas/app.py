@@ -1,11 +1,17 @@
 """Canvas service on 8762. Consumes C command JSON without changing gesture rules."""
 from __future__ import annotations
-import json,logging,struct
-import cv2,websockets
-from fastapi import FastAPI,WebSocket,WebSocketDisconnect
+
+import json
+import logging
+import struct
+
+import cv2
+import websockets
+from canvas_config import ConfigValidationError, load_settings, validate
+from canvas_logging_setup import configure_logging, set_session_id
 from drawing_canvas import DrawingCanvas
-from canvas_config import ConfigValidationError,load_settings,validate
-from canvas_logging_setup import configure_logging,set_session_id
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+
 settings=load_settings()
 try:
     validate(settings)  # Fail Fast: 잘못된 설정이면 uvicorn 기동 자체가 실패한다 (Pillar 1-2)
@@ -14,7 +20,7 @@ except ConfigValidationError as exc:
 configure_logging(level=settings.log_level,log_format=settings.log_format,log_path=settings.log_path or None,max_bytes=settings.log_max_bytes,backup_count=settings.log_backup_count)
 logger=logging.getLogger("canvas")
 OUTPUT=settings.transport.web_canvas_output_url
-app=FastAPI(title="Drawing Canvas"); canvases={}
+app=FastAPI(title="Drawing Canvas"); canvases:dict[str,DrawingCanvas]={}
 def pack(meta,data):
     raw=json.dumps(meta,separators=(",",":")).encode(); return struct.pack(">I",len(raw))+raw+data
 def point(packet):

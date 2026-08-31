@@ -15,16 +15,18 @@ from dataclasses import dataclass
 
 import websockets
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-
-from config import ConfigValidationError, load_settings, validate
 from gesture_classifier import GestureClassifier
 from logging_setup import configure_logging, set_session_id
+
+from config import ConfigValidationError, load_settings, validate
 
 settings = load_settings()
 try:
     validate(settings)  # Fail Fast: 잘못된 설정이면 uvicorn 기동 자체가 실패한다 (Pillar 1-2)
 except ConfigValidationError as exc:
     logging.basicConfig(level=logging.CRITICAL, format="%(message)s")
+    # configure_logging() hasn't run yet here (config validation happens first,
+    # deliberately) so there's no named logger to use.
     logging.critical("configuration rejected, refusing to start: %s", exc)
     raise SystemExit(1) from exc
 
@@ -55,8 +57,10 @@ async def _lifespan(app: FastAPI):
 app = FastAPI(title="Pattern Command", lifespan=_lifespan)
 
 
-@dataclass(frozen=True)
+@dataclass
 class Landmark:
+    # frozen=True로 하지 않는다: index_finger.Landmark Protocol이 쓰기 가능한
+    # x/y/z 속성을 요구해서, frozen dataclass는 구조적으로 이를 만족시키지 못한다.
     x: float
     y: float
     z: float
@@ -72,7 +76,7 @@ class SessionState:
     def __init__(self, session_id: str):
         self.session_id = session_id
         self.classifier = GestureClassifier(**dataclasses.asdict(settings.gesture))
-        self._canvas_ws = None
+        self._canvas_ws: websockets.ClientConnection | None = None
 
     async def _canvas(self):
         if self._canvas_ws is None:

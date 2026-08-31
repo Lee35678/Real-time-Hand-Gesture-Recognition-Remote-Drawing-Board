@@ -17,7 +17,7 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -28,7 +28,7 @@ def _app_env() -> str:
     return os.environ.get("APP_ENV", "dev")
 
 
-def _find_config_dir() -> Optional[Path]:
+def _find_config_dir() -> Path | None:
     override = os.environ.get("PATTERN_COMMAND_CONFIG_DIR")
     if override:
         candidate = Path(override)
@@ -39,9 +39,9 @@ def _find_config_dir() -> Optional[Path]:
         here.parents[2] / "config" if len(here.parents) > 2 else None,  # repo root (local dev)
         here.parents[0] / "config",  # /app/config (Docker: config_loader.py -> /app)
     )
-    for candidate in candidates:
-        if candidate is not None and candidate.is_dir():
-            return candidate
+    for maybe_dir in candidates:
+        if maybe_dir is not None and maybe_dir.is_dir():
+            return maybe_dir
     return None
 
 

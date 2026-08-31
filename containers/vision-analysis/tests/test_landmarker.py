@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Any
 
 import pytest
-
 from app.config import ModelConfig
 from app.errors import ModelLoadError
 from app.vision.landmarker import HandLandmarkerSession, MonotonicTimestampGuard
@@ -80,6 +79,8 @@ def test_on_result_builds_packet_when_both_landmark_sets_present():
 
     result = session._result_queue.get_nowait()
     assert result.hand_present is True
+    assert result.landmarks is not None
+    assert result.world_landmarks is not None
     assert len(result.landmarks) == 21
     assert len(result.world_landmarks) == 21
 

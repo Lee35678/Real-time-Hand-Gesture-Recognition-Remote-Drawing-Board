@@ -28,14 +28,14 @@ logger = logging.getLogger(__name__)
 
 
 async def _drain_into_spool(
-    out_queue: "asyncio.Queue[LandmarkPacket]",
-    spool: "deque[LandmarkPacket]",
+    out_queue: asyncio.Queue[LandmarkPacket],
+    spool: deque[LandmarkPacket],
     spool_ready: asyncio.Condition,
 ) -> None:
     while True:
         packet = await out_queue.get()
         async with spool_ready:
-            if len(spool) >= spool.maxlen:
+            if len(spool) >= spool.maxlen:  # type: ignore[operator]  # 항상 maxlen=고정값으로 생성됨
                 logger.warning(
                     "egress spool full (%d events); dropping oldest spooled packet for seq=%s",
                     spool.maxlen, packet.seq, extra={"event": "spool_overflow"},
@@ -46,7 +46,7 @@ async def _drain_into_spool(
 
 async def _send_loop(
     settings: Settings,
-    spool: "deque[LandmarkPacket]",
+    spool: deque[LandmarkPacket],
     spool_ready: asyncio.Condition,
 ) -> None:
     url = settings.transport.pattern_command_ws_url
@@ -78,8 +78,8 @@ async def _send_loop(
             delay = min(delay * 2, max_delay)
 
 
-async def run_egress_client(settings: Settings, out_queue: "asyncio.Queue[LandmarkPacket]") -> None:
-    spool: "deque[LandmarkPacket]" = deque(maxlen=settings.transport.egress_spool_max_events)
+async def run_egress_client(settings: Settings, out_queue: asyncio.Queue[LandmarkPacket]) -> None:
+    spool: deque[LandmarkPacket] = deque(maxlen=settings.transport.egress_spool_max_events)
     spool_ready = asyncio.Condition()
 
     async with asyncio.TaskGroup() as tg:

@@ -22,7 +22,14 @@ import numpy as np
 from ..config import Settings
 from ..contracts import Handedness, LandmarkPacket, Quality
 from ..observability.metrics import MetricsCollector
-from ..vision.geometry import LetterboxParams, hand_scale, is_near_edge, max_displacement, unletterbox_landmarks
+from ..vision.geometry import (
+    LetterboxParams,
+    Point,
+    hand_scale,
+    is_near_edge,
+    max_displacement,
+    unletterbox_landmarks,
+)
 from ..vision.landmarker import HandLandmarkerSession, LandmarkResult, make_mp_image
 from ..vision.preprocess import prepare_for_inference
 from ..vision.smoothing import HandLandmarksFilter
@@ -51,7 +58,7 @@ class SessionPipeline:
         session_id: str,
         metrics: MetricsCollector,
         loop: asyncio.AbstractEventLoop,
-        out_queue: "asyncio.Queue[LandmarkPacket]",
+        out_queue: asyncio.Queue[LandmarkPacket],
     ):
         self._settings = settings
         self._session_id = session_id
@@ -59,7 +66,7 @@ class SessionPipeline:
         self._loop = loop
         self._out_queue = out_queue
 
-        self._result_queue: "queue.Queue[LandmarkResult]" = queue.Queue()
+        self._result_queue: queue.Queue[LandmarkResult] = queue.Queue()
         self._landmarker = HandLandmarkerSession(settings.model, self._result_queue)
         self._filter = HandLandmarksFilter(
             min_cutoff=settings.one_euro.min_cutoff,
@@ -72,7 +79,7 @@ class SessionPipeline:
         self._pending_frame: _PendingFrame | None = None
         self._context_by_ts: dict[int, _PendingFrame] = {}
 
-        self._prev_landmarks = None
+        self._prev_landmarks: list[Point] | None = None
         self._hand_was_present = False
 
         self._closed = False
@@ -175,6 +182,11 @@ class SessionPipeline:
             self._metrics.record_stage("total", (time.perf_counter_ns() - ctx.received_at_ns) / 1e6)
             return packet
 
+        # hand_present=True는 이 필드들이 채워졌음을 보장한다 (LandmarkResult 참고).
+        assert result.landmarks is not None
+        assert result.world_landmarks is not None
+        assert result.handedness_label is not None
+        assert result.handedness_score is not None
         landmarks = unletterbox_landmarks(result.landmarks, ctx.params)
 
         smoothing_start_ns = time.perf_counter_ns()

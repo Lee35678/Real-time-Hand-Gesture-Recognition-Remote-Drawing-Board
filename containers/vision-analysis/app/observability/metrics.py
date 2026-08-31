@@ -14,7 +14,6 @@ import threading
 from collections import deque
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Deque
 
 import numpy as np
 
@@ -57,10 +56,10 @@ class MetricsCollector:
         self._redetect_spike_ratio = redetect_spike_ratio
         self._target_latency_budget_ms = target_latency_budget_ms
         self._stage_log_every_n_frames = stage_log_every_n_frames
-        self._inference_ms: Deque[float] = deque(maxlen=window_size)
-        self._hand_present: Deque[bool] = deque(maxlen=window_size)
-        self._redetect_flags: Deque[bool] = deque(maxlen=window_size)
-        self._stage_samples: dict[str, Deque[float]] = {}
+        self._inference_ms: deque[float] = deque(maxlen=window_size)
+        self._hand_present: deque[bool] = deque(maxlen=window_size)
+        self._redetect_flags: deque[bool] = deque(maxlen=window_size)
+        self._stage_samples: dict[str, deque[float]] = {}
         self._total_frame_count = 0
         self._lock = threading.Lock()
         self._frames_total = 0
@@ -142,7 +141,7 @@ class MetricsCollector:
 
 def _make_handler(collector: MetricsCollector) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        def log_message(self, format: str, *args) -> None:  # noqa: A002 - stdlib signature
+        def log_message(self, format: str, *args) -> None:
             logger.debug("metrics-http: " + format, *args)
 
         def do_GET(self) -> None:

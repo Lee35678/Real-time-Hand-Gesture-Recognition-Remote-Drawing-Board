@@ -21,6 +21,9 @@ from websockets.asyncio.server import ServerConnection, serve
 
 def _make_handler(out_path: str):
     async def _handler(websocket: ServerConnection) -> None:
+        # Single-connection measurement tool, not a scaled service — blocking
+        # writes of one small JSON line per packet (<=30/s) never meaningfully
+        # stall anything else on this event loop.
         with open(out_path, "a", encoding="utf-8") as fh:
             async for message in websocket:
                 packet = json.loads(message)
@@ -45,7 +48,9 @@ async def run(host: str, port: int, out_path: str) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Container C stand-in that logs raw packet timestamps for perf analysis")
+    parser = argparse.ArgumentParser(
+        description="Container C stand-in that logs raw packet timestamps for perf analysis"
+    )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8761)
     parser.add_argument("--out", required=True, help="JSONL output path (appended)")

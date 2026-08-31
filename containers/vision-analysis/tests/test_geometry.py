@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from app.vision.geometry import (
     MIDDLE_MCP,
     WRIST,
@@ -65,7 +64,9 @@ def test_letterbox_resize_exact_match_takes_the_fast_path_with_identical_pixels(
     image = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
 
     original_resize = cv2.resize
-    monkeypatch.setattr(cv2, "resize", lambda *a, **k: (_ for _ in ()).throw(AssertionError("cv2.resize must not be called")))
+    monkeypatch.setattr(
+        cv2, "resize", lambda *a, **k: (_ for _ in ()).throw(AssertionError("cv2.resize must not be called"))
+    )
     try:
         resized, params = letterbox_resize(image, 640, 480)
     finally:

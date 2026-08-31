@@ -31,7 +31,7 @@ class _CanvasSchema(BaseModel):
     jpeg_quality: int
 
     @model_validator(mode="after")
-    def _check_ranges(self) -> "_CanvasSchema":
+    def _check_ranges(self) -> _CanvasSchema:
         if self.width <= 0 or self.height <= 0:
             raise ValueError("canvas.width/height must be positive")
         if self.zoom_step <= 1.0:
@@ -57,7 +57,7 @@ class _TransportSchema(BaseModel):
     web_canvas_output_url: str
 
     @model_validator(mode="after")
-    def _check_ranges(self) -> "_TransportSchema":
+    def _check_ranges(self) -> _TransportSchema:
         if not self.web_canvas_output_url:
             raise ValueError("transport.web_canvas_output_url must not be empty")
         if "{session_id}" not in self.web_canvas_output_url:
@@ -78,7 +78,7 @@ class _SettingsSchema(BaseModel):
     log_backup_count: int
 
     @model_validator(mode="after")
-    def _check_logging_ranges(self) -> "_SettingsSchema":
+    def _check_logging_ranges(self) -> _SettingsSchema:
         if self.log_max_bytes < 1:
             raise ValueError("log_max_bytes must be >= 1")
         if self.log_backup_count < 0:
@@ -86,7 +86,7 @@ class _SettingsSchema(BaseModel):
         return self
 
 
-def _settings_to_dict(settings: "Settings") -> dict:
+def _settings_to_dict(settings: Settings) -> dict:
     return {
         "canvas": vars(settings.canvas),
         "transport": vars(settings.transport),
@@ -98,7 +98,7 @@ def _settings_to_dict(settings: "Settings") -> dict:
     }
 
 
-def validate(settings: "Settings") -> None:
+def validate(settings: Settings) -> None:
     """설정을 검증한다. 실패 시 `ConfigValidationError`를 던진다."""
     try:
         _SettingsSchema.model_validate(_settings_to_dict(settings))

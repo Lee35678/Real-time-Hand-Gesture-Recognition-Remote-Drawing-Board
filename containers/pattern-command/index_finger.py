@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from collections import deque
+from collections.abc import Sequence
 from dataclasses import dataclass
 from math import acos, degrees, dist
-from typing import Protocol, Sequence
+from typing import Protocol
 
 
 class Landmark(Protocol):

@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import json
 import types
 
@@ -17,7 +18,7 @@ class _FakeWebSocket:
         self.request = types.SimpleNamespace(path=path)
         self._messages = list(messages)
         self._hang = hang
-        self.closed_with = None
+        self.closed_with: tuple | None = None
 
     def __aiter__(self):
         return self
@@ -68,7 +69,7 @@ def _valid_header_json(width: int = 2, height: int = 2) -> str:
 
 def test_session_closes_after_max_consecutive_malformed_frames(monkeypatch):
     monkeypatch.setattr(ingest_server, "SessionPipeline", _FakePipeline)
-    handler = ingest_server._make_handler(_settings(max_malformed=3), metrics=None, out_queue=asyncio.Queue())
+    handler = ingest_server._make_handler(_settings(max_malformed=3), metrics=None, out_queue=asyncio.Queue())  # type: ignore[arg-type]  # _FakePipeline은 metrics를 쓰지 않음
 
     ws = _FakeWebSocket("/ingest/sess-1", [b"garbage"] * 5)
     asyncio.run(handler(ws))
@@ -87,7 +88,7 @@ def test_valid_frame_resets_the_malformed_counter(monkeypatch):
 
     monkeypatch.setattr(_FakePipeline, "__init__", _track_init)
 
-    handler = ingest_server._make_handler(_settings(max_malformed=2), metrics=None, out_queue=asyncio.Queue())
+    handler = ingest_server._make_handler(_settings(max_malformed=2), metrics=None, out_queue=asyncio.Queue())  # type: ignore[arg-type]  # _FakePipeline은 metrics를 쓰지 않음
 
     payload = bytes(2 * 2 * 3)
     messages = [b"garbage", _valid_header_json(), payload, b"garbage"]
@@ -101,7 +102,7 @@ def test_valid_frame_resets_the_malformed_counter(monkeypatch):
 
 def test_unparseable_header_counts_as_malformed(monkeypatch):
     monkeypatch.setattr(ingest_server, "SessionPipeline", _FakePipeline)
-    handler = ingest_server._make_handler(_settings(max_malformed=2), metrics=None, out_queue=asyncio.Queue())
+    handler = ingest_server._make_handler(_settings(max_malformed=2), metrics=None, out_queue=asyncio.Queue())  # type: ignore[arg-type]  # _FakePipeline은 metrics를 쓰지 않음
 
     ws = _FakeWebSocket("/ingest/sess-1", ["not valid json", "still not valid"])
     asyncio.run(handler(ws))
@@ -123,17 +124,15 @@ def test_cancelling_the_handler_still_closes_the_pipeline(monkeypatch):
 
     monkeypatch.setattr(_FakePipeline, "__init__", _track_init)
     monkeypatch.setattr(ingest_server, "SessionPipeline", _FakePipeline)
-    handler = ingest_server._make_handler(_settings(max_malformed=30), metrics=None, out_queue=asyncio.Queue())
+    handler = ingest_server._make_handler(_settings(max_malformed=30), metrics=None, out_queue=asyncio.Queue())  # type: ignore[arg-type]  # _FakePipeline은 metrics를 쓰지 않음
     ws = _FakeWebSocket("/ingest/sess-1", messages=[], hang=True)
 
     async def scenario():
         task = asyncio.ensure_future(handler(ws))
         await asyncio.sleep(0.02)  # let the handler reach the hanging `async for`
         task.cancel()
-        try:
+        with contextlib.suppress(asyncio.CancelledError):
             await task
-        except asyncio.CancelledError:
-            pass
 
     asyncio.run(scenario())
 

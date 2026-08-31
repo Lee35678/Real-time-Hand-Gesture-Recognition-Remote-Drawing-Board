@@ -7,7 +7,7 @@ MediaPipe Hand Landmarker는 스무딩을 내장하지 않으므로(FR-B-13) 직
 from __future__ import annotations
 
 import math
-from typing import Sequence
+from collections.abc import Sequence
 
 from .geometry import NUM_LANDMARKS, Point
 

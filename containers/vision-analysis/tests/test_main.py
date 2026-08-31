@@ -1,9 +1,9 @@
 import asyncio
 
 import pytest
+from app.errors import ModelLoadError
 
 from app import main as main_module
-from app.errors import ModelLoadError
 
 
 class _FakeSettings:
@@ -29,7 +29,9 @@ def test_main_exits_1_when_model_fails_to_load(monkeypatch):
         raise AssertionError("run(settings) must not start once model verification has failed")
 
     monkeypatch.setattr(main_module, "run", _run_should_not_be_called)
-    monkeypatch.setattr(asyncio, "run", lambda coro: (_ for _ in ()).throw(AssertionError("asyncio.run must not be called")))
+    monkeypatch.setattr(
+        asyncio, "run", lambda coro: (_ for _ in ()).throw(AssertionError("asyncio.run must not be called"))
+    )
 
     with pytest.raises(SystemExit) as exc_info:
         main_module.main()

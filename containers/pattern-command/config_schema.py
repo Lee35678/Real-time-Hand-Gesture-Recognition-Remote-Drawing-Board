@@ -35,7 +35,7 @@ class _GestureSchema(BaseModel):
     finger_required_open_votes: int
 
     @model_validator(mode="after")
-    def _check_ranges(self) -> "_GestureSchema":
+    def _check_ranges(self) -> _GestureSchema:
         if not 0.0 < self.open_pip_angle_deg < 180.0:
             raise ValueError(f"gesture.open_pip_angle_deg must be within (0, 180), got {self.open_pip_angle_deg}")
         if self.thumb_active_ratio <= 0.0:
@@ -67,7 +67,7 @@ class _TransportSchema(BaseModel):
     canvas_ws_url: str
 
     @model_validator(mode="after")
-    def _check_ranges(self) -> "_TransportSchema":
+    def _check_ranges(self) -> _TransportSchema:
         if not self.canvas_ws_url:
             raise ValueError("transport.canvas_ws_url must not be empty")
         if "{session_id}" not in self.canvas_ws_url:
@@ -87,7 +87,7 @@ class _SettingsSchema(BaseModel):
     log_backup_count: int
 
     @model_validator(mode="after")
-    def _check_logging_ranges(self) -> "_SettingsSchema":
+    def _check_logging_ranges(self) -> _SettingsSchema:
         if self.log_max_bytes < 1:
             raise ValueError("log_max_bytes must be >= 1")
         if self.log_backup_count < 0:
@@ -95,7 +95,7 @@ class _SettingsSchema(BaseModel):
         return self
 
 
-def _settings_to_dict(settings: "Settings") -> dict:
+def _settings_to_dict(settings: Settings) -> dict:
     return {
         "gesture": vars(settings.gesture),
         "transport": vars(settings.transport),
@@ -107,7 +107,7 @@ def _settings_to_dict(settings: "Settings") -> dict:
     }
 
 
-def validate(settings: "Settings") -> None:
+def validate(settings: Settings) -> None:
     """설정을 검증한다. 실패 시 `ConfigValidationError`를 던진다."""
     try:
         _SettingsSchema.model_validate(_settings_to_dict(settings))

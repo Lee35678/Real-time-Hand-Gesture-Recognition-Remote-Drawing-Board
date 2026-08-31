@@ -1,8 +1,18 @@
 """Container A: mobile/web gateway. Inference belongs to container B."""
 from __future__ import annotations
-import io, json, logging, os, struct, uuid
+
+import io
+import json
+import logging
+import os
+import struct
+import uuid
 from pathlib import Path
-import cv2, numpy as np, qrcode, websockets
+
+import cv2
+import numpy as np
+import qrcode
+import websockets
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse, Response
 from logging_setup import configure_logging, set_session_id
@@ -19,8 +29,8 @@ configure_logging(
     level=os.getenv("WEB_LOG_LEVEL","DEBUG" if APP_ENV=="dev" else "INFO"),
     log_format=os.getenv("WEB_LOG_FORMAT","console" if APP_ENV=="dev" else "json"),
     log_path=os.getenv("WEB_LOG_PATH") or None,
-    max_bytes=int(os.getenv("WEB_LOG_MAX_BYTES",10*1024*1024)),
-    backup_count=int(os.getenv("WEB_LOG_BACKUP_COUNT",5)),
+    max_bytes=int(os.getenv("WEB_LOG_MAX_BYTES") or 10*1024*1024),
+    backup_count=int(os.getenv("WEB_LOG_BACKUP_COUNT") or 5),
 )
 logger=logging.getLogger("web")
 clients: dict[str,set[WebSocket]]={}
@@ -36,7 +46,7 @@ async def publish(session:str,payload:bytes)->None:
     stale=[]
     for ws in set(clients.get(session,set())):
         try: await ws.send_bytes(payload)
-        except Exception as exc:
+        except Exception as exc:  # one dead client must not abort broadcast to the rest
             logger.warning("session %s: dropping unreachable monitor client (%s)",session,exc,extra={"event":"broadcast_failed"})
             stale.append(ws)
     for ws in stale: clients.get(session,set()).discard(ws)

@@ -16,7 +16,6 @@ import argparse
 import asyncio
 import json
 import time
-
 import uuid
 
 import cv2

@@ -1,7 +1,8 @@
-import unittest
 import math
+import unittest
 
 from gesture_classifier import GestureClassifier
+
 from .test_index_finger import Point
 
 
@@ -53,7 +54,10 @@ class GestureClassifierTests(unittest.TestCase):
         classifier = GestureClassifier()
         for _ in range(7):
             classifier.update(landmarks(thumb_active=True, thumb_offset=2.2))
-        states = [classifier.update(landmarks(thumb_active=True, thumb_offset=offset)) for offset in (2.22, 2.18, 2.21, 2.19)]
+        states = [
+            classifier.update(landmarks(thumb_active=True, thumb_offset=offset))
+            for offset in (2.22, 2.18, 2.21, 2.19)
+        ]
         self.assertTrue(all(state.command == "IDLE" for state in states))
 
     def test_repeating_zoom_in_suppresses_the_opposite_transition(self):

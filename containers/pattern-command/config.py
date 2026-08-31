@@ -24,12 +24,12 @@ from config_loader import resolve_float, resolve_int, resolve_str
 from config_schema import ConfigValidationError, validate
 
 __all__ = [
+    "ConfigValidationError",
     "GestureConfig",
-    "TransportConfig",
     "Settings",
+    "TransportConfig",
     "load_settings",
     "validate",
-    "ConfigValidationError",
 ]
 
 

@@ -17,15 +17,15 @@ from .loader import resolve_bool, resolve_float, resolve_int, resolve_str
 from .schema import ConfigValidationError, validate
 
 __all__ = [
+    "ConfigValidationError",
     "ModelConfig",
-    "PipelineConfig",
-    "OneEuroConfig",
-    "TransportConfig",
     "ObservabilityConfig",
+    "OneEuroConfig",
+    "PipelineConfig",
     "Settings",
+    "TransportConfig",
     "load_settings",
     "validate",
-    "ConfigValidationError",
 ]
 
 

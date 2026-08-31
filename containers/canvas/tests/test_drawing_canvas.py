@@ -1,7 +1,6 @@
 import unittest
 
 import numpy as np
-
 from drawing_canvas import (
     DrawingCanvas,
     PerformanceMonitor,

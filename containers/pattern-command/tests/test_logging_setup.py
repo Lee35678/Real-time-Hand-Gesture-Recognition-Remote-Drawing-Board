@@ -2,7 +2,6 @@ import json
 import logging
 
 import pytest
-
 from logging_setup import (
     ConsoleFormatter,
     JsonFormatter,

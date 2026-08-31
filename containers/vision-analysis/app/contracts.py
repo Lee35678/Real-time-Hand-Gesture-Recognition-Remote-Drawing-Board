@@ -7,8 +7,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Optional, Sequence
+from typing import Any
 
 from .vision.geometry import Point
 
@@ -42,7 +43,7 @@ class IngestFrameHeader:
     mirrored: bool = False
 
     @classmethod
-    def from_json(cls, raw: str | bytes) -> "IngestFrameHeader":
+    def from_json(cls, raw: str | bytes) -> IngestFrameHeader:
         try:
             data = json.loads(raw)
         except (json.JSONDecodeError, TypeError) as exc:
@@ -122,10 +123,10 @@ class LandmarkPacket:
     hand_present: bool
     frame_w: int
     frame_h: int
-    handedness: Optional[Handedness] = None
-    landmarks: Optional[Sequence[Point]] = None
-    world_landmarks: Optional[Sequence[Point]] = None
-    hand_scale: Optional[float] = None
+    handedness: Handedness | None = None
+    landmarks: Sequence[Point] | None = None
+    world_landmarks: Sequence[Point] | None = None
+    hand_scale: float | None = None
     quality: Quality = field(default_factory=Quality)
 
     def __post_init__(self) -> None:
@@ -148,7 +149,7 @@ class LandmarkPacket:
         processed_ts: int,
         frame_w: int,
         frame_h: int,
-    ) -> "LandmarkPacket":
+    ) -> LandmarkPacket:
         return cls(
             session_id=session_id,
             seq=seq,
@@ -174,7 +175,7 @@ class LandmarkPacket:
         world_landmarks: Sequence[Point],
         hand_scale: float,
         quality: Quality,
-    ) -> "LandmarkPacket":
+    ) -> LandmarkPacket:
         return cls(
             session_id=session_id,
             seq=seq,
@@ -200,6 +201,11 @@ class LandmarkPacket:
             "frame": {"w": self.frame_w, "h": self.frame_h},
         }
         if self.hand_present:
+            # hand_present=True는 생성 시점에 이 세 필드가 채워졌음을 보장한다
+            # (present()/absent() 팩토리 참고) — mypy에도 그 불변조건을 알려준다.
+            assert self.handedness is not None
+            assert self.landmarks is not None
+            assert self.world_landmarks is not None
             d["handedness"] = self.handedness.to_dict()
             d["landmarks"] = [_point_to_dict(p) for p in self.landmarks]
             d["world_landmarks"] = [_point_to_dict(p) for p in self.world_landmarks]
