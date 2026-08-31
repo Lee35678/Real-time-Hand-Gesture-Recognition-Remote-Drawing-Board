@@ -38,6 +38,7 @@ transport:
   pattern_command_ws_url: ws://pattern-command:8761/landmarks
   egress_reconnect_min_delay: 0.5
   egress_reconnect_max_delay: 10.0
+  egress_spool_max_events: 1000
   metrics_host: 0.0.0.0
   metrics_port: 8763
 

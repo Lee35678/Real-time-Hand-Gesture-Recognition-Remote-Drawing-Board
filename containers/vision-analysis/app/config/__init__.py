@@ -153,6 +153,11 @@ class TransportConfig:
             "VISION_EGRESS_RECONNECT_MAX_DELAY", ("transport", "egress_reconnect_max_delay"), 10.0
         )
     )
+    egress_spool_max_events: int = field(
+        default_factory=lambda: resolve_int(
+            "VISION_EGRESS_SPOOL_MAX_EVENTS", ("transport", "egress_spool_max_events"), 1000
+        )
+    )
     metrics_host: str = field(
         default_factory=lambda: resolve_str("VISION_METRICS_HOST", ("transport", "metrics_host"), "0.0.0.0")
     )

@@ -93,6 +93,7 @@ class _TransportSchema(BaseModel):
     pattern_command_ws_url: str
     egress_reconnect_min_delay: float
     egress_reconnect_max_delay: float
+    egress_spool_max_events: int
     metrics_host: str
     metrics_port: int
 
@@ -102,6 +103,8 @@ class _TransportSchema(BaseModel):
             port = getattr(self, name)
             if not 1 <= port <= 65535:
                 raise ValueError(f"transport.{name} must be within [1, 65535], got {port}")
+        if self.egress_spool_max_events < 1:
+            raise ValueError("transport.egress_spool_max_events must be >= 1")
         if self.egress_reconnect_max_delay < self.egress_reconnect_min_delay:
             raise ValueError(
                 "transport.egress_reconnect_max_delay must be >= egress_reconnect_min_delay "
