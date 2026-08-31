@@ -241,24 +241,50 @@ C→D의 `command`다.
  "landmarks": "..."}
 ```
 
-## 5. Phase 0에서 발견된 현재 상태의 결함 (수정하지 않고 기록만)
+## 5. Phase 0에서 발견된 현재 상태의 결함
 
-1. **[P0] `containers/3-pattern-command/app.py`가 현재 working tree에서 깨져 있다.**
-   `CANVAS_WS_URL = os.getenv(...)` 라인이 `settings = load_settings()`로 교체되며
-   삭제됐지만, `SessionState._canvas()`(49번째 줄)는 여전히 정의되지 않은
-   전역 `CANVAS_WS_URL`을 참조한다. 첫 번째 non-idle 명령에서 `NameError`로
-   죽는다. `config.py`(신규)의 `settings.transport.canvas_ws_url`로 교체해야
-   한다. Phase 1 착수 전 최우선 수정 후보.
-2. **줌 락 방향 결정은 "근접 시작 시점"이 아니라 "손가락 안정 판정이 끝난
+Phase 0 작성 시점에는 "수정하지 않고 기록만" 했으나, 아래 1~3번은 Phase 1
+커밋 1에서 실제로 수정했다(회귀 없음 — 46+26개 기존 테스트 + characterization
+스냅샷 불변으로 확인). 4번은 Phase 1 범위 밖으로 남아 있다.
+
+1. ~~**[P0] `containers/3-pattern-command/app.py`가 working tree에서 깨져
+   있다.**~~ **[수정 완료, Phase 1 커밋 1]** `CANVAS_WS_URL`이 정의되지 않은
+   채 참조되던 버그를 `settings.transport.canvas_ws_url`로 교체했다.
+2. ~~**[P0] `containers/3-pattern-command/config.py`의 `GestureConfig`가
+   `GestureClassifier`에 전달되지 않는다.**~~ **[수정 완료, Phase 1 커밋 1]**
+   `GestureClassifier(**dataclasses.asdict(settings.gesture))`로 배선.
+3. ~~**[P0] `containers/1-canvas/app.py`의 캔버스 해상도가 두 곳에 다른
+   표현으로 중복 하드코딩되어 있다.**~~ **[수정 완료, Phase 1 커밋 1+3]**
+   `CANVAS_WIDTH-1`/`CANVAS_HEIGHT-1`로 단일화(커밋 1) 후 `canvas_config.py`의
+   `config/canvas.yaml`로 이관(커밋 3).
+4. **줌 락 방향 결정은 "근접 시작 시점"이 아니라 "손가락 안정 판정이 끝난
    시점"의 간격 비율로 결정된다.** `characterization.json`의
-   `pinch_approach_release`가 이를 실제로 보여준다 — 아래 §6 참고.
-3. **`egress_client.py`는 재연결 중 큐에 쌓인 패킷을 스풀하지 않는다** —
+   `pinch_approach_release`가 이를 실제로 보여준다 — 아래 §6 참고. (동작
+   자체이지 버그가 아니므로 수정 대상 아님 — 기록 목적)
+5. **`egress_client.py`는 재연결 중 큐에 쌓인 패킷을 스풀하지 않는다** —
    `out_queue.get()`이 블로킹으로 대기만 하며, 큐 자체의 `maxsize`(기본 8)를
    넘으면 `ingest_server`/`pipeline.py` 쪽에서 `QueueFull`로 드롭될 뿐 재연결
-   전용 로컬 스풀은 없다. refactoring.md Pillar 2-4의 "로컬 스풀"은 미구현.
-4. **`inference_ms`가 C→D 경로에 항상 `null`로 전달된다** — B가
+   전용 로컬 스풀은 없다. refactoring.md Pillar 2-4의 "로컬 스풀"은 Phase 2 범위.
+6. **`inference_ms`가 C→D 경로에 항상 `null`로 전달된다** — B가
    `LandmarkPacket`에 추론 시간을 싣지 않기 때문. `drawing_canvas.py`의
    `PerformanceMonitor`는 로컬 디버그 CLI 전용이며 실제 배포 경로와 무관.
+
+### Phase 1에서 새로 발견/해결한 이슈
+
+- **루트 `pytest` 실행이 컨테이너 간 모듈명 충돌로 깨져 있었다.** 저장소
+  루트에서 그냥 `pytest`를 실행하면 레거시 `tests/`와
+  `containers/2-vision-analysis/tests/`가 한 세션에 동시 수집되면서
+  `app`/`containers` 모듈 해석이 꼬였다 — 루트 `pytest.ini`(`testpaths=tests`,
+  `pythonpath=.`)로 해결. 각 컨테이너 테스트는 여전히 독립 실행이 원칙이다
+  (`cd containers/<이름> && pytest`).
+- **동일한 이유로 `containers/1-canvas`에 `config.py`를 그대로 도입할 수
+  없었다.** `drawing_canvas.py`가 `GestureClassifier` 재사용을 위해
+  `containers/3-pattern-command`를 `sys.path`에 얹는데, 그 디렉터리에도
+  (Phase 1 커밋 2에서 추가한) 동일 이름의 `config.py`가 있어 sys.path 순서에
+  따라 엉뚱한 설정이 로드되는 실제 충돌이 재현됐다 — `canvas_config.py`로
+  이름을 바꿔 해결(Phase 1 커밋 3). 컨테이너 간에 sys.path를 공유시키는
+  기존 관행(`drawing_canvas.py`, `containers/pattern_command/` shim)이 있는 한,
+  새 모듈을 추가할 때는 이름 충돌 여부를 항상 확인해야 한다.
 
 ## 6. §2.4 특성화(characterization) 대상 매핑
 
