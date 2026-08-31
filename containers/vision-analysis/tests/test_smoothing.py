@@ -1,7 +1,7 @@
 import pytest
 
-from app.geometry import NUM_LANDMARKS, Point
-from app.one_euro_filter import HandLandmarksFilter
+from app.vision.geometry import NUM_LANDMARKS, Point
+from app.vision.smoothing import HandLandmarksFilter
 
 
 def _make_landmarks(x: float, y: float) -> list[Point]:

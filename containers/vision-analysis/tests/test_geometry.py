@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from app.geometry import (
+from app.vision.geometry import (
     MIDDLE_MCP,
     WRIST,
     Point,

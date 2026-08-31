@@ -95,6 +95,19 @@ Container A가 /ws/monitor 구독자에게 재전송 (모니터 화면에 표시
 
 ### Container B — `containers/vision-analysis/` (비전 분석 엔진, Python, asyncio)
 
+refactoring.md §1-3의 `src/engine/{io,vision,gesture,pipeline,observability}`
+서브모듈 구조를 이 컨테이너에 적용했다(2번째 "나머지 진행" 작업). 실제 코드에
+맞춰 두 가지를 의도적으로 벗어났다:
+
+- **`gesture/` 패키지는 만들지 않았다.** 이 컨테이너는 제스처 상태를 판정하지
+  않는다(그건 Container C 전담) — 억지로 빈 자리를 채우느니 만들지 않는 쪽을
+  택했다. `geometry.py`는 실제 역할(이미지 좌표 기하 연산)에 맞게 `vision/`
+  아래 두었다.
+- **`transport/`를 `io/`로 이름을 바꾸지 않았다.** 이름을 바꿔도 기능은
+  같지만, 패키지 이름이 stdlib `io` 모듈과 겹쳐 혼동을 줄 수 있어 기존 이름을
+  유지했다 — `ingest_server.py`/`egress_client.py`가 refactoring.md가 말하는
+  "io"(frame source/sink) 역할을 그대로 수행한다.
+
 | 파일 | LoC | 책임 |
 |---|---|---|
 | `app/__init__.py` | 0 | (empty) |
@@ -103,12 +116,15 @@ Container A가 /ws/monitor 구독자에게 재전송 (모니터 화면에 표시
 | `app/config/loader.py` | 109 | YAML 병합 로더(`config/vision-analysis.yaml` + `.{APP_ENV}.yaml`), env/타입 변환 헬퍼 |
 | `app/config/schema.py` | 163 | pydantic v2 기반 Fail-Fast 검증(`validate()`), 범위/논리 제약, 모델 파일 존재 확인 |
 | `app/contracts.py` | 217 | `IngestFrameHeader`(A→B), `LandmarkPacket`/`Handedness`/`Quality`(B→C), 계약 규칙 강제(`__post_init__`) |
-| `app/geometry.py` | 120 | 랜드마크 인덱스 상수, letterbox 계산/역매핑(비클램프), `hand_scale`, `is_near_edge`, `max_displacement` — **순수 함수** |
-| `app/landmarker.py` | 124 | MediaPipe `HandLandmarker` 래핑(LIVE_STREAM), 단조 타임스탬프 보정, 결과 콜백→스레드세이프 큐 |
-| `app/metrics.py` | 117 | 추론 시간/검출률/팜 재검출 휴리스틱 수집, `/health`·`/metrics` HTTP 서버 |
-| `app/one_euro_filter.py` | 95 | One Euro Filter(`_Axis1DFilter`, `HandLandmarksFilter`) — **순수 함수/클래스**, z축 미필터링 |
-| `app/pipeline.py` | 203 | `SessionPipeline`: 프레임 수신→전처리→추론 제출(latest-frame-wins)→드레인 스레드→필터/기하 연산→`LandmarkPacket` 조립 |
-| `app/preprocess.py` | 81 | RGB 변환, 회전/미러 보정, CLAHE(옵션), letterbox 리사이즈 조합 |
+| `app/vision/__init__.py` | 0 | (empty) |
+| `app/vision/geometry.py` | 120 | 랜드마크 인덱스 상수, letterbox 계산/역매핑(비클램프), `hand_scale`, `is_near_edge`, `max_displacement` — **순수 함수** |
+| `app/vision/landmarker.py` | 124 | MediaPipe `HandLandmarker` 래핑(LIVE_STREAM), 단조 타임스탬프 보정, 결과 콜백→스레드세이프 큐 |
+| `app/vision/smoothing.py` (구 `one_euro_filter.py`) | 95 | One Euro Filter(`_Axis1DFilter`, `HandLandmarksFilter`) — **순수 함수/클래스**, z축 미필터링 |
+| `app/vision/preprocess.py` | 81 | RGB 변환, 회전/미러 보정, CLAHE(옵션), letterbox 리사이즈 조합 |
+| `app/pipeline/__init__.py` | 0 | (empty) |
+| `app/pipeline/runner.py` (구 `pipeline.py`) | 203 | `SessionPipeline`: 프레임 수신→전처리→추론 제출(latest-frame-wins)→드레인 스레드→필터/기하 연산→`LandmarkPacket` 조립 |
+| `app/observability/__init__.py` | 0 | (empty) |
+| `app/observability/metrics.py` (구 `metrics.py`) | 117 | 추론 시간/검출률/팜 재검출 휴리스틱 수집, `/health`·`/metrics` HTTP 서버 |
 | `app/transport/__init__.py` | 0 | (empty) |
 | `app/transport/ingest_server.py` | 97 | `/ingest/{session_id}` WS 서버, 헤더+바이너리 프레임 파싱, 세션당 `SessionPipeline` 생성/해제 |
 | `app/transport/egress_client.py` | 40 | C로의 WS 송신, 지수 백오프 재연결(스풀 없음 — 큐잉된 패킷은 재연결 중 그대로 대기) |
@@ -118,12 +134,14 @@ Container A가 /ws/monitor 구독자에게 재전송 (모니터 화면에 표시
 | `tests/test_geometry.py` | 83 | letterbox/hand_scale/near_edge/displacement 단위 테스트 |
 | `tests/test_landmarker.py` | 20 | `MonotonicTimestampGuard` 등 |
 | `tests/test_metrics.py` | 38 | `MetricsCollector` 단위 테스트 |
-| `tests/test_one_euro_filter.py` | 64 | One Euro Filter 단위 테스트(초기화/스무딩/reset) |
+| `tests/test_smoothing.py` (구 `test_one_euro_filter.py`) | 64 | One Euro Filter 단위 테스트(초기화/스무딩/reset) |
 | `tests/test_preprocess.py` | 53 | 전처리 단위 테스트 |
-| `Dockerfile` | - | port 8760(ingest)/8763(metrics), 모델을 빌드 시점에 다운로드, `config/vision-analysis*.yaml` 이미지에 포함 |
+| `Dockerfile` | - | port 8760(ingest)/8763(metrics), 모델을 빌드 시점에 다운로드, `config/vision-analysis*.yaml` 이미지에 포함 — `app/` 디렉터리를 통째로 복사하므로 내부 서브모듈 구조 변경과 무관 |
 
-기존 `app/config.py`(단일 파일, 하드코딩 기본값)는 **삭제되고** `app/config/`
-패키지(스키마 검증 포함)로 대체되는 중이다(현재 working tree, 미커밋).
+기존 `app/config.py`(단일 파일, 하드코딩 기본값)는 `app/config/` 패키지(스키마
+검증 포함)로 대체됐다(Phase 1 커밋 완료). 다른 3개 컨테이너(web, canvas,
+pattern-command)는 파일 수가 적어(2~4개) 동일한 서브모듈 분리를 적용하지
+않았다 — 나눌 만한 경계 자체가 없다.
 
 ### Container C — `containers/pattern-command/` (제스처 판정, Python, FastAPI)
 

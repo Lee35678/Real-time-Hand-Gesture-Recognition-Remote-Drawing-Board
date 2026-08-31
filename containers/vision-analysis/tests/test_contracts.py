@@ -9,7 +9,7 @@ from app.contracts import (
     LandmarkPacket,
     Quality,
 )
-from app.geometry import NUM_LANDMARKS, Point
+from app.vision.geometry import NUM_LANDMARKS, Point
 
 
 def _landmarks():

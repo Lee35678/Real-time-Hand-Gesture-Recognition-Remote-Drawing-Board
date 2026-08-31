@@ -31,8 +31,8 @@ PATTERN_COMMAND_DIR = REPO_ROOT / "containers" / "pattern-command"
 # sys.path) — import everything from the `app` package before adding
 # PATTERN_COMMAND_DIR to sys.path.
 sys.path.insert(0, str(VISION_APP_DIR))
-from app.geometry import hand_scale, is_near_edge, max_displacement  # noqa: E402
-from app.one_euro_filter import HandLandmarksFilter  # noqa: E402
+from app.vision.geometry import hand_scale, is_near_edge, max_displacement  # noqa: E402
+from app.vision.smoothing import HandLandmarksFilter  # noqa: E402
 
 sys.path.insert(0, str(PATTERN_COMMAND_DIR))
 from gesture_classifier import GestureClassifier  # noqa: E402
@@ -80,7 +80,7 @@ def _run_image_sequence(seq) -> list[dict]:
     """Drives HandLandmarksFilter() with its class defaults (min_cutoff=1.0,
     beta=0.3, d_cutoff=1.0 — identical to config/vision-analysis.yaml's
     one_euro.* defaults) plus the geometry helpers used by
-    containers/vision-analysis/app/pipeline.py::_handle_result.
+    containers/vision-analysis/app/pipeline/runner.py::_handle_result.
     """
     filt = HandLandmarksFilter()
     out = []
@@ -108,9 +108,9 @@ _RUNNERS = {
     "pinch_approach_release": ("world_meters", "gesture_classifier.GestureClassifier", _run_world_sequence),
     "threshold_chatter": ("world_meters", "gesture_classifier.GestureClassifier", _run_world_sequence),
     "hand_lost_midway": ("world_meters", "gesture_classifier.GestureClassifier", _run_world_sequence),
-    "fast_swipe": ("normalized_image", "app.one_euro_filter.HandLandmarksFilter + app.geometry", _run_image_sequence),
-    "static_jitter": ("normalized_image", "app.one_euro_filter.HandLandmarksFilter + app.geometry", _run_image_sequence),
-    "out_of_bounds": ("normalized_image", "app.one_euro_filter.HandLandmarksFilter + app.geometry", _run_image_sequence),
+    "fast_swipe": ("normalized_image", "app.vision.smoothing.HandLandmarksFilter + app.vision.geometry", _run_image_sequence),
+    "static_jitter": ("normalized_image", "app.vision.smoothing.HandLandmarksFilter + app.vision.geometry", _run_image_sequence),
+    "out_of_bounds": ("normalized_image", "app.vision.smoothing.HandLandmarksFilter + app.vision.geometry", _run_image_sequence),
 }
 
 

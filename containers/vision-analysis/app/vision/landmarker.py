@@ -17,7 +17,7 @@ import mediapipe as mp
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision as mp_vision
 
-from .config import ModelConfig
+from ..config import ModelConfig
 from .geometry import Point
 
 logger = logging.getLogger(__name__)

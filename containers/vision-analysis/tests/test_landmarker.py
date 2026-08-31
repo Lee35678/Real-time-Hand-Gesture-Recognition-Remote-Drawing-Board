@@ -1,4 +1,4 @@
-from app.landmarker import MonotonicTimestampGuard
+from app.vision.landmarker import MonotonicTimestampGuard
 
 
 def test_timestamp_guard_passes_through_increasing_values():

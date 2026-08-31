@@ -19,13 +19,13 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .config import Settings
-from .contracts import Handedness, LandmarkPacket, Quality
-from .geometry import LetterboxParams, hand_scale, is_near_edge, max_displacement, unletterbox_landmarks
-from .landmarker import HandLandmarkerSession, LandmarkResult, make_mp_image
-from .metrics import MetricsCollector
-from .one_euro_filter import HandLandmarksFilter
-from .preprocess import prepare_for_inference
+from ..config import Settings
+from ..contracts import Handedness, LandmarkPacket, Quality
+from ..observability.metrics import MetricsCollector
+from ..vision.geometry import LetterboxParams, hand_scale, is_near_edge, max_displacement, unletterbox_landmarks
+from ..vision.landmarker import HandLandmarkerSession, LandmarkResult, make_mp_image
+from ..vision.preprocess import prepare_for_inference
+from ..vision.smoothing import HandLandmarksFilter
 
 logger = logging.getLogger(__name__)
 

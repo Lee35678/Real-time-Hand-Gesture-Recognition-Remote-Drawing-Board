@@ -14,7 +14,7 @@ import sys
 
 from .config import ConfigValidationError, Settings, load_settings, validate
 from .contracts import LandmarkPacket
-from .metrics import MetricsCollector, run_metrics_http_server
+from .observability.metrics import MetricsCollector, run_metrics_http_server
 from .transport.egress_client import run_egress_client
 from .transport.ingest_server import run_ingest_server
 

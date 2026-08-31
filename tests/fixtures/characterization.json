@@ -1830,7 +1830,7 @@
           "max_displacement_from_prev": 0.001907333286987667
         }
       ],
-      "source": "app.one_euro_filter.HandLandmarksFilter + app.geometry",
+      "source": "app.vision.smoothing.HandLandmarksFilter + app.vision.geometry",
       "space": "normalized_image"
     },
     "hand_lost_midway": {
@@ -5796,7 +5796,7 @@
           "max_displacement_from_prev": 0.04287211711841984
         }
       ],
-      "source": "app.one_euro_filter.HandLandmarksFilter + app.geometry",
+      "source": "app.vision.smoothing.HandLandmarksFilter + app.vision.geometry",
       "space": "normalized_image"
     },
     "pinch_approach_release": {
@@ -15652,7 +15652,7 @@
           "max_displacement_from_prev": 0.002267917446780828
         }
       ],
-      "source": "app.one_euro_filter.HandLandmarksFilter + app.geometry",
+      "source": "app.vision.smoothing.HandLandmarksFilter + app.vision.geometry",
       "space": "normalized_image"
     },
     "threshold_chatter": {

@@ -18,8 +18,8 @@ from websockets.exceptions import ConnectionClosed
 
 from ..config import Settings
 from ..contracts import ContractError, IngestFrameHeader, LandmarkPacket
-from ..metrics import MetricsCollector
-from ..pipeline import SessionPipeline
+from ..observability.metrics import MetricsCollector
+from ..pipeline.runner import SessionPipeline
 
 logger = logging.getLogger(__name__)
 

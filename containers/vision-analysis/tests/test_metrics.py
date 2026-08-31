@@ -1,4 +1,4 @@
-from app.metrics import MetricsCollector
+from app.observability.metrics import MetricsCollector
 
 
 def test_snapshot_reports_detection_rate():

@@ -8,8 +8,8 @@ Two coordinate spaces are used, matching how the real pipeline actually splits w
 
 - ``"normalized_image"``: values roughly in [0, 1], the space MediaPipe's
   ``hand_landmarks`` / ``LandmarkPacket.landmarks`` use. Consumed by
-  ``containers/vision-analysis/app/one_euro_filter.py`` (smoothing) and
-  ``app/geometry.py`` (hand_scale / is_near_edge / max_displacement).
+  ``containers/vision-analysis/app/vision/smoothing.py`` (smoothing) and
+  ``app/vision/geometry.py`` (hand_scale / is_near_edge / max_displacement).
 - ``"world_meters"``: metric, camera-distance-invariant coordinates, the space
   ``hand_world_landmarks`` / ``LandmarkPacket.world_landmarks`` use. Consumed by
   ``containers/pattern-command/gesture_classifier.py`` and ``index_finger.py``.
@@ -35,7 +35,7 @@ NUM_LANDMARKS = 21
 @dataclass(frozen=True)
 class Landmark:
     """Minimal (x, y, z) point. Structurally compatible with both
-    ``app.geometry.Point`` (a NamedTuple) and container 3's ``Landmark`` Protocol —
+    ``app.vision.geometry.Point`` (a NamedTuple) and container 3's ``Landmark`` Protocol —
     both only ever read ``.x``/``.y``/``.z``.
     """
 

@@ -10,7 +10,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Optional, Sequence
 
-from .geometry import Point
+from .vision.geometry import Point
 
 VALID_COLOR_ORDERS = {"BGR": "bgr8", "RGB": "rgb8"}
 VALID_DTYPE = "uint8"
