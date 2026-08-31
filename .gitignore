@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
+# 민감 정보(SESSION_TOKEN, PUBLIC_BASE_URL 등)는 .env로 주입한다 (.env.example 참고).
+# docker compose는 이 디렉터리의 .env를 자동으로 읽어 docker-compose.yml의
+# ${VAR} 치환에 사용한다 — 별도 --env-file 옵션 없이도 동작한다.
+.env
+
 captures/
 tmp/
 
