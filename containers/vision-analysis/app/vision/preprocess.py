@@ -72,10 +72,13 @@ def prepare_for_inference(
     """PRD 3장 ①~④ 단계를 순서대로 적용해 MediaPipe 입력용 배열을 만든다.
 
     반환된 배열은 RGB, uint8, C-contiguous이며 (target_h, target_w, 3) 형상을 가진다.
+    letterbox_resize가 이미 C-contiguous를 보장하므로 여기서 다시 확인하지 않는다
+    (Pillar 3-4 — np.ascontiguousarray는 이미 contiguous한 배열에는 복사를 하지
+    않지만, 두 번 호출하는 것 자체가 "어디서 보장되는지" 불명확하게 만든다).
     """
     rgb = to_rgb(frame, pixel_format)
     rgb = apply_geometric_correction(rgb, rotation, mirrored)
     if enable_clahe:
         rgb = apply_clahe(rgb)
     resized, params = letterbox_resize(rgb, target_w, target_h)
-    return np.ascontiguousarray(resized), params
+    return resized, params

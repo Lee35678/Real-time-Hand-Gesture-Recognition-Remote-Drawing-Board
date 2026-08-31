@@ -57,6 +57,46 @@ def test_letterbox_resize_preserves_aspect_and_pads():
     assert params.pad_y > 0
 
 
+def test_letterbox_resize_exact_match_takes_the_fast_path_with_identical_pixels(monkeypatch):
+    """Pillar 3-4: when the source already matches the target size, cv2.resize
+    must not even be called — the fast path returns the source pixels as-is."""
+    import cv2
+
+    image = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
+
+    original_resize = cv2.resize
+    monkeypatch.setattr(cv2, "resize", lambda *a, **k: (_ for _ in ()).throw(AssertionError("cv2.resize must not be called")))
+    try:
+        resized, params = letterbox_resize(image, 640, 480)
+    finally:
+        monkeypatch.setattr(cv2, "resize", original_resize)
+
+    assert resized.shape == (480, 640, 3)
+    assert resized.flags["C_CONTIGUOUS"]
+    assert params.scale == pytest.approx(1.0)
+    assert params.pad_x == pytest.approx(0.0)
+    assert params.pad_y == pytest.approx(0.0)
+    np.testing.assert_array_equal(resized, image)
+
+
+def test_letterbox_resize_exact_match_matches_the_general_path_bit_for_bit():
+    """The fast path must not change behavior — compare against what the
+    general (non-short-circuited) computation produces for the same input."""
+    import cv2
+
+    image = np.random.default_rng(0).integers(0, 255, (480, 640, 3), dtype=np.uint8)
+
+    fast_result, _ = letterbox_resize(image, 640, 480)
+
+    # Reimplements the pre-optimization path directly to compare against.
+    general_resized = cv2.resize(image, (640, 480), interpolation=cv2.INTER_LINEAR)
+    canvas = np.zeros((480, 640, 3), dtype=image.dtype)
+    canvas[0:480, 0:640] = general_resized
+    general_result = np.ascontiguousarray(canvas)
+
+    np.testing.assert_array_equal(fast_result, general_result)
+
+
 def test_hand_scale_uses_wrist_and_middle_mcp():
     landmarks = [Point(0.0, 0.0)] * 21
     landmarks[WRIST] = Point(0.0, 0.0)

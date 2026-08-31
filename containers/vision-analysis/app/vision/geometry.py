@@ -59,6 +59,13 @@ def letterbox_resize(image: np.ndarray, dst_w: int, dst_h: int) -> tuple[np.ndar
     src_h, src_w = image.shape[:2]
     params = compute_letterbox_params(src_w, src_h, dst_w, dst_h)
 
+    if src_w == dst_w and src_h == dst_h:
+        # Pillar 3-4: Container A가 이미 목표 해상도로 보내는 경우(흔한 경우)
+        # scale=1.0, pad=0이 되어 cv2.resize + 캔버스 복사가 전부 아무 일도 하지
+        # 않으면서 프레임마다 반복된다 — 그 경우를 건너뛴다. compute_letterbox_params가
+        # 이미 scale/pad를 계산해 뒀으므로 params 값 자체는 동일하게 반환한다.
+        return np.ascontiguousarray(image), params
+
     new_w = max(1, round(src_w * params.scale))
     new_h = max(1, round(src_h * params.scale))
     resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
