@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 COPY requirements.txt ./requirements.txt
-COPY containers/canvas/app.py containers/canvas/drawing_canvas.py containers/canvas/canvas_config.py containers/canvas/canvas_config_loader.py containers/canvas/canvas_config_schema.py ./
+COPY containers/canvas/app.py containers/canvas/drawing_canvas.py containers/canvas/canvas_config.py containers/canvas/canvas_config_loader.py containers/canvas/canvas_config_schema.py containers/canvas/canvas_logging_setup.py ./
 COPY containers/pattern-command ./pattern-command
 COPY config/canvas*.yaml ./config/
 # requirements.txt pulls the GUI build of opencv-python for local (non-Docker) dev;

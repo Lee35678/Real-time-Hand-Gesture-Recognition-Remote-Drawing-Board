@@ -20,3 +20,10 @@ canvas:
 
 transport:
   web_canvas_output_url: ws://web:8000/ws/canvas-output/{session_id}
+
+log_level: INFO
+log_format: console
+log_path: ""
+log_rotation:
+  max_bytes: 10485760
+  backup_count: 5
