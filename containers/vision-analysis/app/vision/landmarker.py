@@ -49,7 +49,14 @@ class MonotonicTimestampGuard:
         self._last_ts = -1
 
     def next(self, capture_ts_ms: int) -> int:
-        ts = capture_ts_ms if capture_ts_ms > self._last_ts else self._last_ts + 1
+        if capture_ts_ms > self._last_ts:
+            ts = capture_ts_ms
+        else:
+            ts = self._last_ts + 1
+            logger.warning(
+                "non-monotonic timestamp corrected: capture_ts_ms=%d <= last=%d, using %d",
+                capture_ts_ms, self._last_ts, ts,
+            )
         self._last_ts = ts
         return ts
 
@@ -95,6 +102,24 @@ class HandLandmarkerSession:
         inference_ms = (time.monotonic() - started_at) * 1000.0 if started_at else 0.0
 
         if not result.hand_landmarks:
+            self._result_queue.put(
+                LandmarkResult(timestamp_ms=timestamp_ms, hand_present=False, inference_ms=inference_ms)
+            )
+            return
+
+        if not result.hand_world_landmarks:
+            # PRD 2-2 edge case #4: hand_landmarks came back but world_landmarks
+            # didn't. LandmarkPacket requires both when hand_present=True (rule
+            # 6.2-5), so there is no valid packet to build from a partial
+            # result — treat this frame as hand-not-present rather than risk an
+            # IndexError on result.hand_world_landmarks[0] below. The pipeline's
+            # existing hand-lost handling (filter reset, IDLE downstream) already
+            # covers the "skip and hold" behavior the PRD asks for.
+            logger.warning(
+                "hand_landmarks present but hand_world_landmarks missing at timestamp_ms=%d; "
+                "treating frame as hand not present",
+                timestamp_ms,
+            )
             self._result_queue.put(
                 LandmarkResult(timestamp_ms=timestamp_ms, hand_present=False, inference_ms=inference_ms)
             )
