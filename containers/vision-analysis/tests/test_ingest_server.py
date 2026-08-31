@@ -6,20 +6,28 @@ from app.transport import ingest_server
 
 
 class _FakeWebSocket:
-    """Minimal async-iterable stand-in for websockets.ServerConnection."""
+    """Minimal async-iterable stand-in for websockets.ServerConnection.
 
-    def __init__(self, path: str, messages: list):
+    `hang=True` makes __anext__ block forever once messages run out, instead
+    of ending iteration — simulating an open, idle connection so a test can
+    cancel the handler task the way TaskGroup cancellation would.
+    """
+
+    def __init__(self, path: str, messages: list, hang: bool = False):
         self.request = types.SimpleNamespace(path=path)
         self._messages = list(messages)
+        self._hang = hang
         self.closed_with = None
 
     def __aiter__(self):
         return self
 
     async def __anext__(self):
-        if not self._messages:
-            raise StopAsyncIteration
-        return self._messages.pop(0)
+        if self._messages:
+            return self._messages.pop(0)
+        if self._hang:
+            await asyncio.Event().wait()
+        raise StopAsyncIteration
 
     async def close(self, code=None, reason=None):
         self.closed_with = (code, reason)
@@ -99,3 +107,35 @@ def test_unparseable_header_counts_as_malformed(monkeypatch):
     asyncio.run(handler(ws))
 
     assert ws.closed_with == (1011, "too many malformed frames")
+
+
+def test_cancelling_the_handler_still_closes_the_pipeline(monkeypatch):
+    """Graceful shutdown (Pillar 2-5) relies on `finally: pipeline.close()`
+    actually running when the process-wide TaskGroup cancels an in-flight
+    session on SIGINT/SIGTERM — this proves that mechanism, rather than
+    trusting it by inspection."""
+    fake_pipelines: list[_FakePipeline] = []
+    original_init = _FakePipeline.__init__
+
+    def _track_init(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        fake_pipelines.append(self)
+
+    monkeypatch.setattr(_FakePipeline, "__init__", _track_init)
+    monkeypatch.setattr(ingest_server, "SessionPipeline", _FakePipeline)
+    handler = ingest_server._make_handler(_settings(max_malformed=30), metrics=None, out_queue=asyncio.Queue())
+    ws = _FakeWebSocket("/ingest/sess-1", messages=[], hang=True)
+
+    async def scenario():
+        task = asyncio.ensure_future(handler(ws))
+        await asyncio.sleep(0.02)  # let the handler reach the hanging `async for`
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+    asyncio.run(scenario())
+
+    assert len(fake_pipelines) == 1
+    assert fake_pipelines[0].closed is True

@@ -10,6 +10,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import logging
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
 import websockets
@@ -32,7 +33,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger("pattern-command")
 
-app = FastAPI(title="Pattern Command")
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    yield
+    # Graceful shutdown (Pillar 2-5): close every session's canvas connection
+    # instead of leaving them to drop silently when the process exits.
+    logger.info("shutting down: closing %d active session(s)", len(_sessions))
+    for state in list(_sessions.values()):
+        await state.close()
+    _sessions.clear()
+
+
+app = FastAPI(title="Pattern Command", lifespan=_lifespan)
 
 
 @dataclass(frozen=True)
