@@ -8,7 +8,12 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 
 ROOT=Path(__file__).resolve().parent; WEB_DIR=ROOT/"web"
 VISION_URL=os.getenv("VISION_ANALYSIS_WS_URL","ws://vision-analysis:8760/ingest/{session_id}")
+APP_ENV=os.getenv("APP_ENV","dev")
 TOKEN=os.getenv("SESSION_TOKEN","hand-board"); PUBLIC=os.getenv("PUBLIC_BASE_URL","").rstrip("/")
+if APP_ENV=="prod" and TOKEN=="hand-board":
+    # Fail Fast (Pillar 1-2): the default token is public (it's in this source file),
+    # so leaving it in prod would let anyone stream frames into someone else's session.
+    raise SystemExit("configuration rejected, refusing to start: SESSION_TOKEN must be set when APP_ENV=prod (the default 'hand-board' is not secret)")
 clients: dict[str,set[WebSocket]]={}
 
 def pack(meta:dict,data:bytes)->bytes:

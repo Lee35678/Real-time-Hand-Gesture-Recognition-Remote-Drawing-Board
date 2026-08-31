@@ -10,4 +10,7 @@ COPY containers/0-web/web ./web
 RUN pip install --no-cache-dir -r requirements.txt \
     && pip uninstall -y opencv-python \
     && pip install --no-cache-dir "opencv-python-headless>=4.10,<5"
+
+ENV APP_ENV=prod
+
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
