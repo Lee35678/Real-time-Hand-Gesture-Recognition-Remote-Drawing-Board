@@ -18,3 +18,7 @@ data/drawings/*
 !data/drawings/.gitkeep
 
 ngrok.log
+
+# 실제 측정 실행마다 새로 생기는 원본 벤치마크 로그 (docs/00_baseline_metrics.md
+# §3.3 참고) — 요약 수치만 문서에 기록하고 원본 JSONL/CSV는 커밋하지 않는다.
+docs/perf/
