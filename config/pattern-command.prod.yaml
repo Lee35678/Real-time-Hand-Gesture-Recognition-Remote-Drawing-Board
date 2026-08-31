@@ -3,3 +3,4 @@ app:
   env: prod
 
 log_level: INFO
+log_format: json

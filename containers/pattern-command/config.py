@@ -103,6 +103,22 @@ class Settings:
     log_level: str = field(
         default_factory=lambda: resolve_str("PATTERN_COMMAND_LOG_LEVEL", ("log_level",), "INFO")
     )
+    log_format: str = field(
+        default_factory=lambda: resolve_str("PATTERN_COMMAND_LOG_FORMAT", ("log_format",), "console")
+    )
+    log_path: str = field(
+        default_factory=lambda: resolve_str("PATTERN_COMMAND_LOG_PATH", ("log_path",), "")
+    )
+    log_max_bytes: int = field(
+        default_factory=lambda: resolve_int(
+            "PATTERN_COMMAND_LOG_MAX_BYTES", ("log_rotation", "max_bytes"), 10 * 1024 * 1024
+        )
+    )
+    log_backup_count: int = field(
+        default_factory=lambda: resolve_int(
+            "PATTERN_COMMAND_LOG_BACKUP_COUNT", ("log_rotation", "backup_count"), 5
+        )
+    )
 
 
 def load_settings() -> Settings:

@@ -18,6 +18,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from config import ConfigValidationError, load_settings, validate
 from gesture_classifier import GestureClassifier
+from logging_setup import configure_logging, set_session_id
 
 settings = load_settings()
 try:
@@ -27,9 +28,12 @@ except ConfigValidationError as exc:
     logging.critical("configuration rejected, refusing to start: %s", exc)
     raise SystemExit(1) from exc
 
-logging.basicConfig(
-    level=getattr(logging, settings.log_level.upper(), logging.INFO),
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+configure_logging(
+    level=settings.log_level,
+    log_format=settings.log_format,
+    log_path=settings.log_path or None,
+    max_bytes=settings.log_max_bytes,
+    backup_count=settings.log_backup_count,
 )
 logger = logging.getLogger("pattern-command")
 
@@ -39,7 +43,10 @@ async def _lifespan(app: FastAPI):
     yield
     # Graceful shutdown (Pillar 2-5): close every session's canvas connection
     # instead of leaving them to drop silently when the process exits.
-    logger.info("shutting down: closing %d active session(s)", len(_sessions))
+    logger.info(
+        "shutting down: closing %d active session(s)", len(_sessions),
+        extra={"event": "shutdown_requested"},
+    )
     for state in list(_sessions.values()):
         await state.close()
     _sessions.clear()
@@ -71,7 +78,10 @@ class SessionState:
         if self._canvas_ws is None:
             url = settings.transport.canvas_ws_url.format(session_id=self.session_id)
             self._canvas_ws = await websockets.connect(url, max_size=None)
-            logger.info("session %s: connected to canvas at %s", self.session_id, url)
+            logger.info(
+                "session %s: connected to canvas at %s", self.session_id, url,
+                extra={"event": "canvas_connected"},
+            )
         return self._canvas_ws
 
     async def handle_packet(self, packet: dict) -> None:
@@ -103,7 +113,10 @@ class SessionState:
             ws = await self._canvas()
             await ws.send(json.dumps(message))
         except OSError as exc:
-            logger.warning("session %s: canvas send failed (%s); will reconnect next packet", self.session_id, exc)
+            logger.warning(
+                "session %s: canvas send failed (%s); will reconnect next packet", self.session_id, exc,
+                extra={"event": "canvas_send_failed"},
+            )
             self._canvas_ws = None
 
     async def close(self) -> None:
@@ -131,23 +144,31 @@ async def health():
 @app.websocket("/landmarks")
 async def landmarks(ws: WebSocket) -> None:
     await ws.accept()
-    logger.info("Container B connected")
+    logger.info("Container B connected", extra={"event": "ingest_connected"})
     try:
         while True:
             raw = await ws.receive_text()
             try:
                 packet = json.loads(raw)
             except json.JSONDecodeError:
-                logger.warning("dropping malformed packet: %.200s", raw)
+                logger.warning(
+                    "dropping malformed packet: %.200s", raw, extra={"event": "packet_dropped"}
+                )
                 continue
 
             session_id = packet.get("session_id")
             if not session_id:
                 continue
 
+            set_session_id(session_id)
             try:
                 await _session(session_id).handle_packet(packet)
             except Exception:
-                logger.exception("session %s: failed to handle packet", session_id)
+                logger.exception(
+                    "session %s: failed to handle packet", session_id,
+                    extra={"event": "packet_handling_failed"},
+                )
     except WebSocketDisconnect:
-        logger.info("Container B disconnected")
+        logger.info("Container B disconnected", extra={"event": "ingest_disconnected"})
+    finally:
+        set_session_id(None)
