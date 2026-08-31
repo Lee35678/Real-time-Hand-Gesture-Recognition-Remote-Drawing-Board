@@ -1,10 +1,11 @@
 """Container A: mobile/web gateway. Inference belongs to container B."""
 from __future__ import annotations
-import io, json, os, struct, uuid
+import io, json, logging, os, struct, uuid
 from pathlib import Path
 import cv2, numpy as np, qrcode, websockets
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse, Response
+from logging_setup import configure_logging, set_session_id
 
 ROOT=Path(__file__).resolve().parent; WEB_DIR=ROOT/"web"
 VISION_URL=os.getenv("VISION_ANALYSIS_WS_URL","ws://vision-analysis:8760/ingest/{session_id}")
@@ -14,6 +15,14 @@ if APP_ENV=="prod" and TOKEN=="hand-board":
     # Fail Fast (Pillar 1-2): the default token is public (it's in this source file),
     # so leaving it in prod would let anyone stream frames into someone else's session.
     raise SystemExit("configuration rejected, refusing to start: SESSION_TOKEN must be set when APP_ENV=prod (the default 'hand-board' is not secret)")
+configure_logging(
+    level=os.getenv("WEB_LOG_LEVEL","DEBUG" if APP_ENV=="dev" else "INFO"),
+    log_format=os.getenv("WEB_LOG_FORMAT","console" if APP_ENV=="dev" else "json"),
+    log_path=os.getenv("WEB_LOG_PATH") or None,
+    max_bytes=int(os.getenv("WEB_LOG_MAX_BYTES",10*1024*1024)),
+    backup_count=int(os.getenv("WEB_LOG_BACKUP_COUNT",5)),
+)
+logger=logging.getLogger("web")
 clients: dict[str,set[WebSocket]]={}
 
 def pack(meta:dict,data:bytes)->bytes:
@@ -27,7 +36,9 @@ async def publish(session:str,payload:bytes)->None:
     stale=[]
     for ws in set(clients.get(session,set())):
         try: await ws.send_bytes(payload)
-        except Exception: stale.append(ws)
+        except Exception as exc:
+            logger.warning("session %s: dropping unreachable monitor client (%s)",session,exc,extra={"event":"broadcast_failed"})
+            stale.append(ws)
     for ws in stale: clients.get(session,set()).discard(ws)
 
 app=FastAPI(title="Remote Drawing Web Gateway")
@@ -49,7 +60,9 @@ async def health(): return {"status":"ok","role":"A-web-gateway"}
 @app.websocket("/ws/camera")
 async def camera(ws:WebSocket,t:str=""):
     if t!=TOKEN: await ws.close(code=1008,reason="invalid token"); return
+    set_session_id(t)
     await ws.accept(); vision_url=VISION_URL.format(session_id=t)
+    logger.info("session %s: camera connected",t,extra={"event":"camera_session_started"})
     try:
         async with websockets.connect(vision_url,max_size=None) as vision:
             while True:
@@ -61,8 +74,13 @@ async def camera(ws:WebSocket,t:str=""):
                 # A→B: exactly one TEXT JSON header, then one BINARY raw BGR frame.
                 await vision.send(json.dumps(header,separators=(",",":"))); await vision.send(frame.tobytes(order="C"))
                 await publish(t,pack({**header,"kind":"source"},jpeg))
-    except WebSocketDisconnect: pass
-    except Exception as exc: await ws.send_text(json.dumps({"error":str(exc)}))
+    except WebSocketDisconnect:
+        logger.info("session %s: camera disconnected",t,extra={"event":"camera_session_ended"})
+    except Exception as exc:
+        logger.exception("session %s: camera session failed",t,extra={"event":"camera_session_error"})
+        await ws.send_text(json.dumps({"error":str(exc)}))
+    finally:
+        set_session_id(None)
 
 @app.websocket("/ws/canvas-output/{session_id}")
 async def canvas_output(ws:WebSocket,session_id:str):
