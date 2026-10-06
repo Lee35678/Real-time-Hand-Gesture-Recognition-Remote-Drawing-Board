@@ -28,11 +28,22 @@
 ### 1. 저장소 받기
 
 ```powershell
-git clone https://github.com/ddiw/Real-time-Hand-Gesture-Recognition-Remote-Drawing-Board.git
+git clone https://github.com/Lee35678/Real-time-Hand-Gesture-Recognition-Remote-Drawing-Board.git
 cd Real-time-Hand-Gesture-Recognition-Remote-Drawing-Board
 ```
 
-### 2. 빌드 및 실행
+### 2. 세션 토큰 설정 (`.env`)
+
+Docker 이미지는 `APP_ENV=prod`로 고정되어 있고, web 컨테이너는 `SESSION_TOKEN`이 기본값
+`hand-board` 그대로면 기동을 거부한다(`containers/web/app.py`의 Fail-Fast 체크). 먼저 `.env`를
+만들고 `SESSION_TOKEN`을 임의의 값으로 바꾼다.
+
+```powershell
+Copy-Item .env.example .env
+# .env를 열어 SESSION_TOKEN=<임의의 문자열> 로 수정
+```
+
+### 3. 빌드 및 실행
 
 ```powershell
 docker compose up --build
@@ -44,7 +55,7 @@ docker compose up --build
 | --- | --- |
 | web | http://localhost:8000 |
 | canvas | http://localhost:8762/health |
-| pattern-command | http://localhost:8761/health |
+| pattern-command | 호스트에 포트를 열지 않음 (compose 내부 `pattern-command:8761`에서만 접근) |
 | vision-analysis | http://localhost:8763/health , http://localhost:8763/metrics |
 
 종료는 `Ctrl+C`, 또는 다른 터미널에서 `docker compose down`.
@@ -53,15 +64,19 @@ docker compose up --build
 있다. `APP_ENV=dev`/`prod` 전환과 환경변수 오버라이드 규칙은
 [`docs/operations.md` §3](docs/operations.md#3-설정-configyaml)을 본다.
 
-### 3. 휴대폰으로 실제 사용하기 (원격 모드)
+### 4. 휴대폰으로 실제 사용하기 (원격 모드)
 
 카메라는 HTTPS에서만 접근을 허용하므로, 실제 휴대폰으로 테스트하려면 ngrok으로
 로컬 서버를 HTTPS 터널링해야 합니다.
 
 ```powershell
 ngrok config add-authtoken <ngrok 대시보드에서 받은 토큰>   # 최초 1회만
-.\start_remote.ps1
+.\start_remote.ps1 -SessionToken <임의의 문자열>
 ```
+
+`start_remote.ps1`은 `SESSION_TOKEN` 환경변수를 `-SessionToken` 값으로 덮어쓴다. 이 인자를
+생략하면 기본값 `hand-board`가 들어가 web 컨테이너가 기동을 거부하므로 반드시 지정한다.
+ngrok이 PATH에 없으면 `-NgrokPath` 인자나 `NGROK_PATH` 환경변수로 실행 파일 경로를 알려 준다.
 
 콘솔에 뜨는 두 주소를 사용합니다.
 
@@ -72,7 +87,8 @@ ngrok config add-authtoken <ngrok 대시보드에서 받은 토큰>   # 최초 1
 
 ## 개발
 
-각 컨테이너는 독립된 `requirements*.txt`/`pytest.ini`/`Dockerfile`을 갖는다. 컨테이너
+각 컨테이너는 독립된 `pytest.ini`/`Dockerfile`을 갖는다(`requirements*.txt`는 vision-analysis·
+pattern-command만 따로 있고, web·canvas 이미지는 루트 `requirements.txt`를 쓴다). 컨테이너
 간에 `app`/`config`/`tests` 같은 이름이 겹치는 모듈이 있어서 **반드시 해당 컨테이너
 디렉토리 안에서** 실행한다.
 
